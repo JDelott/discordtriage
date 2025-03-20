@@ -5,33 +5,7 @@ import {
     MessageApplicationCommandData
 } from 'discord.js';
 import { createGitHubIssue, getAuthUrl } from './github';
-import { store } from './store';
-
-const GITHUB_OWNER = 'JDelott';
-const GITHUB_REPO = 'discordtriage';
-
-export async function registerCommands(client: Client) {
-    if (!client.application) return;
-
-    try {
-        console.log('Registering commands...');
-        await client.application.commands.set([]);
-        
-        const command: MessageApplicationCommandData = {
-            name: 'Create GitHub Issue',
-            type: ApplicationCommandType.Message
-        };
-
-        const registeredCommand = await client.application.commands.create(command);
-        console.log('Command registered successfully:', {
-            id: registeredCommand.id,
-            name: registeredCommand.name,
-            type: registeredCommand.type
-        });
-    } catch (error) {
-        console.error('Error registering commands:', error);
-    }
-}
+import { userConfigStore } from '@/storage/userConfig';
 
 export async function handleCommand(interaction: Interaction) {
     if (!interaction.isMessageContextMenuCommand()) return;
@@ -39,9 +13,15 @@ export async function handleCommand(interaction: Interaction) {
 
     try {
         const userId = interaction.user.id;
-        const token = store.userTokens.get(userId);
+        // Force reload config each time
+        const userConfig = userConfigStore.getConfig(userId);
+        
+        console.log('Processing command with config:', {
+            userId,
+            config: userConfig
+        });
 
-        if (!token) {
+        if (!userConfig?.githubToken) {
             const authUrl = getAuthUrl(userId);
             await interaction.reply({
                 content: `Please authenticate with GitHub first: ${authUrl}`,
@@ -50,14 +30,19 @@ export async function handleCommand(interaction: Interaction) {
             return;
         }
 
-        // Defer the reply first
         await interaction.deferReply({ ephemeral: true });
         
         const message = interaction.targetMessage;
+        
+        // Log the repository being used
+        console.log('Using repository:', userConfig.githubRepo);
+        
+        const [owner, repo] = userConfig.githubRepo.split('/');
+        
         const issueUrl = await createGitHubIssue(
-            token,
-            GITHUB_OWNER,
-            GITHUB_REPO,
+            userConfig.githubToken,
+            owner,
+            repo,
             `Discord Thread: ${message.thread?.name || 'Message'}`,
             `${message.content}\n\nCreated from Discord by ${interaction.user.tag}\nOriginal Message Link: ${message.url}`
         );
@@ -68,18 +53,30 @@ export async function handleCommand(interaction: Interaction) {
     } catch (error) {
         console.error('Error handling command:', error);
         try {
+            const errorMessage = 'Failed to create GitHub issue. Please try again.';
             if (!interaction.replied && !interaction.deferred) {
-                await interaction.reply({
-                    content: 'Failed to create GitHub issue. Please try again.',
-                    ephemeral: true
-                });
+                await interaction.reply({ content: errorMessage, ephemeral: true });
             } else {
-                await interaction.editReply({
-                    content: 'Failed to create GitHub issue. Please try again.'
-                });
+                await interaction.editReply({ content: errorMessage });
             }
         } catch (replyError) {
             console.error('Error sending error reply:', replyError);
         }
+    }
+}
+
+export async function registerCommands(client: Client) {
+    if (!client.application) return;
+
+    try {
+        const command: MessageApplicationCommandData = {
+            name: 'Create GitHub Issue',
+            type: ApplicationCommandType.Message
+        };
+
+        await client.application.commands.create(command);
+        console.log('Command registered successfully');
+    } catch (error) {
+        console.error('Error registering commands:', error);
     }
 }

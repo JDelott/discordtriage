@@ -1,25 +1,17 @@
 import { NextResponse } from 'next/server';
-import { BOT_CONFIG } from '@/bot/config';
-import { store } from '@/bot/store';
+import { userConfigStore } from '@/storage/userConfig';
 
 export async function GET(request: Request) {
-    console.log('GitHub OAuth callback received');
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
-    const state = searchParams.get('state'); // Discord user ID
-
-    console.log('Received params:', { 
-        hasCode: !!code, 
-        state: state 
-    });
+    const state = searchParams.get('state'); // This is the Discord user ID
 
     if (!code || !state) {
-        console.error('Missing parameters');
         return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
     }
 
     try {
-        console.log('Requesting GitHub token...');
+        // Exchange code for token
         const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
             method: 'POST',
             headers: {
@@ -27,29 +19,31 @@ export async function GET(request: Request) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                client_id: BOT_CONFIG.clientId,
-                client_secret: BOT_CONFIG.clientSecret,
+                client_id: process.env.GITHUB_CLIENT_ID,
+                client_secret: process.env.GITHUB_CLIENT_SECRET,
                 code,
             }),
         });
 
         const data = await tokenResponse.json();
-        console.log('Token response received:', { hasToken: !!data.access_token });
         
         if (data.access_token) {
-            store.userTokens.set(state, data.access_token);
-            console.log('Token stored for user:', state);
-            
-            const storedToken = store.userTokens.get(state);
-            console.log('Token verification:', { 
-                userId: state,
-                wasStored: !!storedToken
+            // Get existing config first
+            const existingConfig = userConfigStore.getConfig(state);
+            console.log('Existing config before token update:', existingConfig);
+
+            // Update token while preserving repo
+            userConfigStore.setConfig(state, {
+                githubToken: data.access_token,
+                githubRepo: existingConfig?.githubRepo || ''
             });
-            
+
+            const updatedConfig = userConfigStore.getConfig(state);
+            console.log('Config after token update:', updatedConfig);
+
             return NextResponse.redirect(new URL('/auth-success', request.url));
         }
 
-        console.error('Failed to get token:', data);
         return NextResponse.json({ error: 'Failed to get token' }, { status: 500 });
     } catch (error) {
         console.error('GitHub OAuth error:', error);
