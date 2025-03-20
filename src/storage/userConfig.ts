@@ -54,23 +54,32 @@ class UserConfigStore {
         }
     }
 
+    private logSafeConfig(config: UserConfig | undefined) {
+        if (!config) return undefined;
+        return {
+            githubRepo: config.githubRepo || '',
+            githubToken: config.githubToken ? '[TOKEN HIDDEN]' : ''
+        };
+    }
+
     public getConfig(discordId: string): UserConfig | undefined {
-        this.loadConfigs(); // Always load fresh
-        return this.configs[discordId];
+        this.loadConfigs();
+        const config = this.configs[discordId];
+        console.log('Getting config for:', discordId, 'Config:', this.logSafeConfig(config));
+        return config;
     }
 
     public setConfig(discordId: string, updates: Partial<UserConfig>) {
-        this.loadConfigs(); // Always load fresh
-        const current = this.configs[discordId] || {};
+        this.loadConfigs();
+        const current = this.configs[discordId] || { githubToken: '', githubRepo: '' };
         
-        // Merge updates with current config
         this.configs[discordId] = {
             githubToken: updates.githubToken ?? current.githubToken ?? '',
             githubRepo: updates.githubRepo ?? current.githubRepo ?? ''
         };
         
         this.saveConfigs();
-        console.log('Updated config for:', discordId, 'New config:', this.configs[discordId]);
+        console.log('Updated config for:', discordId, 'New config:', this.logSafeConfig(this.configs[discordId]));
     }
 
     public updateToken(discordId: string, token: string) {
