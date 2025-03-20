@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, Partials } from 'discord.js';
+import { Client, GatewayIntentBits, Partials, Events } from 'discord.js';
 import { BOT_CONFIG } from './config';
 import { registerCommands, handleCommand } from './commands';
 
@@ -21,11 +21,10 @@ client.once('ready', async () => {
   await registerCommands(client);
 });
 
-client.on('interactionCreate', handleCommand);
+// Simplified interaction handling
+client.on(Events.InteractionCreate, handleCommand);
 
 export function startBot() {
   console.log('Starting bot...');
-  return client.login(BOT_CONFIG.token).catch(error => {
-    console.error('Failed to start bot:', error);
-  });
+  return client.login(BOT_CONFIG.token);
 }

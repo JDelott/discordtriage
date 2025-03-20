@@ -1,37 +1,33 @@
 import { 
     Client, 
     ApplicationCommandType,
-    ApplicationCommandData,
     Interaction,
-    MessageContextMenuCommandInteraction,
-    InteractionReplyOptions,
-    MessagePayload,
-    CommandInteraction,
-    MessageFlags,
-    BaseMessageOptions
+    MessageApplicationCommandData
 } from 'discord.js';
-import { userTokens, createGitHubIssue, getAuthUrl } from './github';
+import { createGitHubIssue, getAuthUrl } from './github';
+import { store } from './store';
 
-const GITHUB_OWNER = 'jacobdelott'; // Your GitHub username
-const GITHUB_REPO = 'discordtriage'; // Your repository name
+const GITHUB_OWNER = 'JDelott';
+const GITHUB_REPO = 'discordtriage';
 
 export async function registerCommands(client: Client) {
     if (!client.application) return;
 
     try {
-        // First, remove all existing commands
+        console.log('Registering commands...');
         await client.application.commands.set([]);
-
-        // Create the context menu command
-        const command: ApplicationCommandData = {
+        
+        const command: MessageApplicationCommandData = {
             name: 'Create GitHub Issue',
-            type: ApplicationCommandType.Message,
-            defaultMemberPermissions: null
+            type: ApplicationCommandType.Message
         };
 
-        // Register the command globally
         const registeredCommand = await client.application.commands.create(command);
-        console.log('Command registered with ID:', registeredCommand.id);
+        console.log('Command registered successfully:', {
+            id: registeredCommand.id,
+            name: registeredCommand.name,
+            type: registeredCommand.type
+        });
     } catch (error) {
         console.error('Error registering commands:', error);
     }
@@ -41,42 +37,49 @@ export async function handleCommand(interaction: Interaction) {
     if (!interaction.isMessageContextMenuCommand()) return;
     if (interaction.commandName !== 'Create GitHub Issue') return;
 
-    const userId = interaction.user.id;
-    const token = userTokens.get(userId);
-
-    if (!token) {
-        const authUrl = getAuthUrl(userId);
-        await interaction.reply({
-            content: `Please authenticate with GitHub first: ${authUrl}`,
-            flags: MessageFlags.Ephemeral
-        } as BaseMessageOptions);
-        return;
-    }
-
     try {
-        const message = interaction.targetMessage;
-        await interaction.reply({
-            content: 'Creating GitHub issue...',
-            flags: MessageFlags.Ephemeral
-        } as BaseMessageOptions);
+        const userId = interaction.user.id;
+        const token = store.userTokens.get(userId);
+
+        if (!token) {
+            const authUrl = getAuthUrl(userId);
+            await interaction.reply({
+                content: `Please authenticate with GitHub first: ${authUrl}`,
+                ephemeral: true
+            });
+            return;
+        }
+
+        // Defer the reply first
+        await interaction.deferReply({ ephemeral: true });
         
+        const message = interaction.targetMessage;
         const issueUrl = await createGitHubIssue(
             token,
-            GITHUB_OWNER,  // Using the constant
-            GITHUB_REPO,   // Using the constant
+            GITHUB_OWNER,
+            GITHUB_REPO,
             `Discord Thread: ${message.thread?.name || 'Message'}`,
             `${message.content}\n\nCreated from Discord by ${interaction.user.tag}\nOriginal Message Link: ${message.url}`
         );
 
         await interaction.editReply({
-            content: `✅ GitHub issue created successfully! View it here: ${issueUrl}`,
-            flags: MessageFlags.Ephemeral
-        } as BaseMessageOptions);
+            content: `✅ GitHub issue created successfully! View it here: ${issueUrl}`
+        });
     } catch (error) {
-        console.error('Error creating issue:', error);
-        await interaction.editReply({
-            content: 'Failed to create GitHub issue. Please try again.',
-            flags: MessageFlags.Ephemeral
-        } as BaseMessageOptions);
+        console.error('Error handling command:', error);
+        try {
+            if (!interaction.replied && !interaction.deferred) {
+                await interaction.reply({
+                    content: 'Failed to create GitHub issue. Please try again.',
+                    ephemeral: true
+                });
+            } else {
+                await interaction.editReply({
+                    content: 'Failed to create GitHub issue. Please try again.'
+                });
+            }
+        } catch (replyError) {
+            console.error('Error sending error reply:', replyError);
+        }
     }
 }
