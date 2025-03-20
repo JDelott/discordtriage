@@ -1,30 +1,45 @@
-import { Client, GatewayIntentBits, Partials, Events } from 'discord.js';
+import { Client, GatewayIntentBits, Events } from 'discord.js';
 import { BOT_CONFIG } from './config';
 import { registerCommands, handleCommand } from './commands';
 
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers,
-  ],
-  partials: [
-    Partials.Message,
-    Partials.Channel,
-    Partials.Reaction
-  ]
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+    ]
 });
 
-client.once('ready', async () => {
-  console.log('Bot is ready!');
-  await registerCommands(client);
+let isReady = false;
+
+client.once(Events.ClientReady, async () => {
+    console.log('Bot is ready!');
+    try {
+        await registerCommands(client);
+        console.log('Commands registered successfully');
+        isReady = true;
+    } catch (error) {
+        console.error('Error registering commands:', error);
+    }
 });
 
-// Simplified interaction handling
-client.on(Events.InteractionCreate, handleCommand);
+client.on(Events.InteractionCreate, async (interaction) => {
+    if (!isReady) {
+        console.log('Bot not ready yet, ignoring interaction');
+        return;
+    }
+    try {
+        await handleCommand(interaction);
+    } catch (error) {
+        console.error('Error handling interaction:', error);
+    }
+});
 
 export function startBot() {
-  console.log('Starting bot...');
-  return client.login(BOT_CONFIG.token);
+    if (isReady) {
+        console.log('Bot already running');
+        return Promise.resolve();
+    }
+    console.log('Starting bot...');
+    return client.login(BOT_CONFIG.token);
 }

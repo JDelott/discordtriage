@@ -1,7 +1,25 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Image from "next/image";
 
 export default function Home() {
+    const [botStatus, setBotStatus] = useState('checking');
     const inviteUrl = "https://discord.com/api/oauth2/authorize?client_id=1351997021124558880&permissions=277025778752&scope=bot%20applications.commands";
+
+    useEffect(() => {
+        // Start the bot when the page loads
+        fetch('/api/bot')
+            .then(res => res.json())
+            .then(data => {
+                setBotStatus('online');
+                console.log('Bot status:', data);
+            })
+            .catch(error => {
+                setBotStatus('offline');
+                console.error('Bot error:', error);
+            });
+    }, []);
 
     return (
         <div className="h-screen bg-white flex items-center">
@@ -16,14 +34,23 @@ export default function Home() {
                         <p className="text-xl text-gray-600 mb-8 max-w-md">
                             Convert Discord messages into GitHub issues with a single click.
                         </p>
-                        <a
-                            href={inviteUrl}
-                            className="inline-block bg-black text-white px-6 py-3 hover:bg-emerald-500 transition-colors"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            Add to Discord
-                        </a>
+                        {botStatus === 'online' ? (
+                            <a
+                                href={inviteUrl}
+                                className="inline-block bg-black text-white px-6 py-3 hover:bg-emerald-500 transition-colors"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                Add to Discord
+                            </a>
+                        ) : (
+                            <button
+                                className="inline-block bg-gray-300 text-gray-600 px-6 py-3 cursor-not-allowed"
+                                disabled
+                            >
+                                {botStatus === 'checking' ? 'Checking Bot Status...' : 'Bot Offline'}
+                            </button>
+                        )}
                     </div>
 
                     <a
