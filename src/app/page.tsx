@@ -1,28 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from "next/image";
 
 export default function Home() {
     const [botStatus, setBotStatus] = useState('checking');
-    const inviteUrl = "https://discord.com/api/oauth2/authorize?client_id=1351997021124558880&permissions=277025778752&scope=bot%20applications.commands";
+    const inviteUrl = `https://discord.com/api/oauth2/authorize?client_id=${process.env.NEXT_PUBLIC_DISCORD_APPLICATION_ID}&permissions=0&scope=bot%20applications.commands`;
 
     useEffect(() => {
-        // Start the bot when the page loads
         fetch('/api/bot')
             .then(res => res.json())
-            .then(data => {
-                setBotStatus('online');
-                console.log('Bot status:', data);
-            })
-            .catch(error => {
-                setBotStatus('offline');
-                console.error('Bot error:', error);
-            });
+            .then(() => setBotStatus('online'))
+            .catch(() => setBotStatus('offline'));
     }, []);
 
     return (
-        <div className="h-screen bg-white flex items-center">
+        <div className="min-h-screen bg-white">
             <div className="container mx-auto px-8 grid grid-cols-2 gap-16 relative">
                 {/* Left Side */}
                 <div>
