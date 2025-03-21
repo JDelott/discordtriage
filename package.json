@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "NODE_ENV=production node -e \"require('./src/bot').startBot(); require('next').default({ dev: false }).prepare().then(app => app.getRequestHandler().listen(3000))\"",
     "lint": "next lint"
   },
   "dependencies": {
