@@ -13,6 +13,14 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_DISCORD_APPLICATION_ID: "1352461270561062975",
   },
+  async rewrites() {
+    return [
+      {
+        source: "/:path*",
+        destination: `/:path*`,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
