@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",
   reactStrictMode: true,
   webpack: (config) => {
     config.externals.push({
@@ -10,9 +9,6 @@ const nextConfig = {
       "zlib-sync": "commonjs zlib-sync",
     });
     return config;
-  },
-  experimental: {
-    outputFileTracingRoot: undefined,
   },
 };
 
