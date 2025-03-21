@@ -12,16 +12,17 @@
   },
   "dependencies": {
     "@octokit/rest": "^20.1.2",
+    "autoprefixer": "^10.4.17",
     "discord.js": "^14.11.0",
     "express": "^4.21.2",
+    "module-alias": "^2.2.3",
     "next": "14.1.0",
+    "postcss": "^8.4.35",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "zlib-sync": "^0.1.9",
     "tailwindcss": "^3.4.1",
-    "postcss": "^8.4.35",
-    "autoprefixer": "^10.4.17",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "zlib-sync": "^0.1.9"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

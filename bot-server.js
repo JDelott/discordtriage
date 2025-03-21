@@ -1,3 +1,4 @@
+require("./register-aliases");
 const { startBot } = require("./dist/bot/index.js");
 
 // Start the bot
