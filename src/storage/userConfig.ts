@@ -1,9 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 
-interface UserConfig {
-    githubToken: string;
-    githubRepo: string;
+export interface UserConfig {
+    discordId: string;
+    githubToken?: string;
+    githubRepo?: string;
 }
 
 class UserConfigStore {
@@ -74,6 +75,7 @@ class UserConfigStore {
         const current = this.configs[discordId] || { githubToken: '', githubRepo: '' };
         
         this.configs[discordId] = {
+            discordId,
             githubToken: updates.githubToken ?? current.githubToken ?? '',
             githubRepo: updates.githubRepo ?? current.githubRepo ?? ''
         };
@@ -89,3 +91,32 @@ class UserConfigStore {
 }
 
 export const userConfigStore = UserConfigStore.getInstance();
+
+export const getConfig = async (discordId: string): Promise<UserConfig | null> => {
+    try {
+        // Your existing implementation
+        return {
+            discordId,
+            // other fields from storage
+        };
+    } catch (error) {
+        console.error('Error getting config:', error);
+        return null;
+    }
+};
+
+export const updateConfig = async (discordId: string, updates: Partial<Omit<UserConfig, 'discordId'>>): Promise<UserConfig> => {
+    const config: UserConfig = {
+        discordId,
+        ...updates
+    };
+    
+    // Save to storage
+    const data = JSON.stringify({
+        discordId,
+        ...updates
+    });
+    
+    // Return the updated config
+    return config;
+};

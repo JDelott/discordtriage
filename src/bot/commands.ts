@@ -5,7 +5,7 @@ import {
     MessageApplicationCommandData
 } from 'discord.js';
 import { createGitHubIssue, getAuthUrl } from './github';
-import { userConfigStore } from '@/storage/userConfig';
+import { getConfig, UserConfig } from '../storage/userConfig';
 
 export async function handleCommand(interaction: Interaction) {
     if (!interaction.isMessageContextMenuCommand()) return;
@@ -13,18 +13,16 @@ export async function handleCommand(interaction: Interaction) {
 
     try {
         const userId = interaction.user.id;
-        // Force reload config each time
-        const userConfig = userConfigStore.getConfig(userId);
+        const config = await getConfig(userId);
         
         console.log('Processing command with config:', {
             userId,
-            config: userConfig
+            config: config
         });
 
-        if (!userConfig?.githubToken) {
-            const authUrl = getAuthUrl(userId);
+        if (!config?.githubToken || !config?.githubRepo) {
             await interaction.reply({
-                content: `Please authenticate with GitHub first: ${authUrl}`,
+                content: 'Please set up your GitHub token and repository first at http://142.93.1.19/settings',
                 ephemeral: true
             });
             return;
@@ -35,12 +33,12 @@ export async function handleCommand(interaction: Interaction) {
         const message = interaction.targetMessage;
         
         // Log the repository being used
-        console.log('Using repository:', userConfig.githubRepo);
+        console.log('Using repository:', config.githubRepo);
         
-        const [owner, repo] = userConfig.githubRepo.split('/');
+        const [owner, repo] = config.githubRepo.split('/');
         
         const issueUrl = await createGitHubIssue(
-            userConfig.githubToken,
+            config.githubToken,
             owner,
             repo,
             `Discord Thread: ${message.thread?.name || 'Message'}`,
