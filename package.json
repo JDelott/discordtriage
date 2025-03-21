@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "bot": "ts-node bot-server.ts",
+    "bot": "node bot-server.js",
     "lint": "next lint"
   },
   "dependencies": {
