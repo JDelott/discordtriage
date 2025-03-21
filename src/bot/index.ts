@@ -7,6 +7,7 @@ const client = new Client({
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
+        GatewayIntentBits.DirectMessages,
     ]
 });
 
@@ -23,23 +24,19 @@ client.once(Events.ClientReady, async () => {
     }
 });
 
-client.on(Events.InteractionCreate, async (interaction) => {
-    if (!isReady) {
-        console.log('Bot not ready yet, ignoring interaction');
+client.on(Events.InteractionCreate, handleCommand);
+
+export async function startBot() {
+    if (isReady) {
+        console.log('Bot is already running');
         return;
     }
-    try {
-        await handleCommand(interaction);
-    } catch (error) {
-        console.error('Error handling interaction:', error);
-    }
-});
 
-export function startBot() {
-    if (isReady) {
-        console.log('Bot already running');
-        return Promise.resolve();
+    try {
+        await client.login(BOT_CONFIG.token);
+        console.log('Bot started successfully');
+    } catch (error) {
+        console.error('Failed to start bot:', error);
+        throw error;
     }
-    console.log('Starting bot...');
-    return client.login(BOT_CONFIG.token);
 }
