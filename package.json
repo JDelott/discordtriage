@@ -5,8 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:bot": "tsc --project tsconfig.bot.json",
     "start": "next start",
-    "bot": "node bot-server.js",
+    "bot": "npm run build:bot && node bot-server.js",
     "lint": "next lint"
   },
   "dependencies": {

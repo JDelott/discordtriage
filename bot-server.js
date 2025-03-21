@@ -1,4 +1,4 @@
-const { startBot } = require("./.next/server/src/bot");
+const { startBot } = require("./dist/bot/index.js");
 
 // Start the bot
 startBot().catch((error) => {
