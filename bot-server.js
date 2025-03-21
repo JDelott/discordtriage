@@ -1,4 +1,4 @@
-require("dotenv").config({ path: ".env.production" });
+require("dotenv").config(); // This will look for .env by default
 require("./register-aliases");
 
 // Debug: Print environment variables
