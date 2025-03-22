@@ -1,8 +1,7 @@
-import { Client, GatewayIntentBits, Events } from 'discord.js';
-import { BOT_CONFIG } from './config';
-import { registerCommands, handleCommand } from './commands';
 import { config } from 'dotenv';
+import { Client, GatewayIntentBits } from 'discord.js';
 import path from 'path';
+import { handleCommand, registerCommands } from './commands';
 
 // Load environment variables from the correct path
 const envPath = path.resolve(process.cwd(), '.env');
@@ -24,41 +23,67 @@ if (missingVars.length > 0) {
     process.exit(1);
 }
 
-const client = new Client({
+// Export the client so it can be used in other files
+export const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.DirectMessages,
+        GatewayIntentBits.MessageContent
     ]
 });
 
-let isReady = false;
-
-client.once(Events.ClientReady, async () => {
-    console.log('Bot is ready!');
+// Initialize bot
+const initBot = async () => {
     try {
-        await registerCommands(client);
-        console.log('Commands registered successfully');
-        isReady = true;
+        client.on('ready', async () => {
+            console.log(`Bot is online as ${client.user?.tag}`);
+            await registerCommands(client).catch(console.error);
+        });
+
+        client.on('interactionCreate', handleCommand);
+
+        client.on('error', (error) => {
+            console.error('Discord client error:', error);
+        });
+
+        client.on('disconnect', () => {
+            console.log('Bot disconnected, attempting to reconnect...');
+            reconnect();
+        });
+
+        await client.login(process.env.DISCORD_TOKEN);
+        console.log('Bot logged in successfully');
     } catch (error) {
-        console.error('Error registering commands:', error);
+        console.error('Failed to initialize bot:', error);
+        process.exit(1);
     }
+};
+
+// Reconnection logic
+const reconnect = () => {
+    setTimeout(async () => {
+        try {
+            await client.login(process.env.DISCORD_TOKEN);
+            console.log('Bot reconnected successfully');
+        } catch (error) {
+            console.error('Reconnection failed:', error);
+            reconnect(); // Try again
+        }
+    }, 5000);
+};
+
+// Handle process termination
+process.on('SIGINT', () => {
+    console.log('Received SIGINT. Cleaning up...');
+    client.destroy();
+    process.exit(0);
 });
 
-client.on(Events.InteractionCreate, handleCommand);
+process.on('SIGTERM', () => {
+    console.log('Received SIGTERM. Cleaning up...');
+    client.destroy();
+    process.exit(0);
+});
 
-export async function startBot() {
-    if (isReady) {
-        console.log('Bot is already running');
-        return;
-    }
-
-    try {
-        await client.login(BOT_CONFIG.token);
-        console.log('Bot started successfully');
-    } catch (error) {
-        console.error('Failed to start bot:', error);
-        throw error;
-    }
-}
+// Start the bot
+initBot().catch(console.error);
