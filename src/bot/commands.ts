@@ -5,7 +5,7 @@ import {
     MessageApplicationCommandData
 } from 'discord.js';
 import { createGitHubIssue } from './github';
-import { userConfigStore } from '@/storage/userConfig';
+import { userConfigStore } from '../storage/userConfig';
 
 export async function handleCommand(interaction: Interaction) {
     if (!interaction.isMessageContextMenuCommand()) return;
