@@ -20,11 +20,8 @@ export async function handleCommand(interaction: Interaction) {
         
         console.log('Processing command with config:', {
             userId,
-            config: config ? {
-                discordId: userId,
-                githubToken: '[TOKEN HIDDEN]',
-                githubRepo: config.githubRepo
-            } : null,
+            hasConfig: !!config,
+            repo: config?.githubRepo,
             availableConfigs: Object.keys(userConfigStore['configs'])
         });
 
@@ -45,24 +42,38 @@ export async function handleCommand(interaction: Interaction) {
         const message = interaction.targetMessage;
         const [owner, repo] = config.githubRepo.split('/');
         
-        console.log('Creating issue for repo:', config.githubRepo);
+        console.log('Creating issue in repository:', config.githubRepo);
 
-        const issueUrl = await createGitHubIssue(
-            config.githubToken,
-            owner,
-            repo,
-            `Discord Thread: ${message.thread?.name || 'Message'}`,
-            `${message.content}\n\nCreated from Discord by ${interaction.user.tag}\nOriginal Message Link: ${message.url}`
-        );
+        try {
+            const issueUrl = await createGitHubIssue(
+                config.githubToken,
+                owner,
+                repo,
+                `Discord Thread: ${message.thread?.name || 'Message'}`,
+                `${message.content}\n\nCreated from Discord by ${interaction.user.tag}\nOriginal Message Link: ${message.url}`
+            );
 
-        await interaction.editReply({
-            content: `✅ GitHub issue created successfully! View it here: ${issueUrl}`
-        });
+            await interaction.editReply({
+                content: `✅ GitHub issue created successfully! View it here: ${issueUrl}`
+            });
+        } catch (error) {
+            console.error('Failed to create issue:', error);
+            await interaction.editReply({
+                content: `❌ Failed to create issue in ${config.githubRepo}. Please check your repository settings and try again.`
+            });
+        }
     } catch (error) {
         console.error('Error handling command:', error);
-        await interaction.editReply({
-            content: '❌ Failed to create GitHub issue. Please check your settings and try again.'
-        });
+        if (interaction.deferred) {
+            await interaction.editReply({
+                content: '❌ Failed to create GitHub issue. Please check your settings and try again.'
+            });
+        } else {
+            await interaction.reply({
+                content: '❌ Failed to create GitHub issue. Please check your settings and try again.',
+                ephemeral: true
+            });
+        }
     }
 }
 
