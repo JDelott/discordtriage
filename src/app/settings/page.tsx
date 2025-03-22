@@ -1,11 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Settings() {
+    const router = useRouter();
     const [discordId, setDiscordId] = useState('');
     const [repo, setRepo] = useState('');
     const [message, setMessage] = useState('');
+
+    useEffect(() => {
+        fetch('/api/auth/status')
+            .then(res => res.json())
+            .then(data => {
+                if (!data.authenticated) {
+                    router.push('/');
+                    return;
+                }
+                setDiscordId(data.discordId);
+            });
+    }, [router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -22,6 +36,15 @@ export default function Settings() {
         }
     };
 
+    const handleLogout = async () => {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            router.push('/');
+        } catch (error) {
+            setMessage('Error logging out.');
+        }
+    };
+
     return (
         <div className="h-screen bg-white flex items-center">
             <div className="container mx-auto px-8 max-w-xl relative">
@@ -29,9 +52,17 @@ export default function Settings() {
                 <div className="absolute -top-4 -left-4 w-20 h-20 bg-emerald-100 -z-10" />
 
                 {/* Header */}
-                <h1 className="text-6xl font-normal mb-16 tracking-tight">
-                    <span className="text-emerald-500">Settings</span>
-                </h1>
+                <div className="flex justify-between items-center mb-16">
+                    <h1 className="text-6xl font-normal tracking-tight">
+                        <span className="text-emerald-500">Settings</span>
+                    </h1>
+                    <button
+                        onClick={handleLogout}
+                        className="text-sm uppercase tracking-widest hover:text-emerald-500 transition-colors"
+                    >
+                        Logout
+                    </button>
+                </div>
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-8">
@@ -41,9 +72,8 @@ export default function Settings() {
                             <input
                                 type="text"
                                 value={discordId}
-                                onChange={(e) => setDiscordId(e.target.value)}
-                                className="mt-2 block w-full px-4 py-3 bg-gray-50 focus:bg-emerald-50 transition-colors outline-none text-lg"
-                                placeholder="Right-click your name in Discord and copy ID"
+                                disabled
+                                className="mt-2 block w-full px-4 py-3 bg-gray-100 text-gray-500 outline-none text-lg"
                             />
                         </label>
                     </div>
@@ -61,17 +91,17 @@ export default function Settings() {
                         </label>
                     </div>
 
+                    {message && (
+                        <div className="text-sm text-emerald-500">{message}</div>
+                    )}
+
                     <div className="pt-4">
                         <button
                             type="submit"
-                            className="bg-black text-white px-8 py-3 hover:bg-emerald-500 transition-colors"
+                            className="bg-black text-white px-6 py-3 hover:bg-emerald-500 transition-colors"
                         >
                             Save Settings
                         </button>
-
-                        {message && (
-                            <p className="mt-4 text-sm text-emerald-500">{message}</p>
-                        )}
                     </div>
                 </form>
 

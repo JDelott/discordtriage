@@ -5,14 +5,35 @@ import Image from "next/image";
 
 export default function Home() {
     const [botStatus, setBotStatus] = useState('checking');
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [discordId, setDiscordId] = useState('');
     const inviteUrl = `https://discord.com/api/oauth2/authorize?client_id=${process.env.NEXT_PUBLIC_DISCORD_APPLICATION_ID}&permissions=0&scope=bot%20applications.commands`;
 
     useEffect(() => {
+        // Check bot status
         fetch('/api/bot')
             .then(res => res.json())
             .then(() => setBotStatus('online'))
             .catch(() => setBotStatus('offline'));
+
+        // Check auth status
+        fetch('/api/auth/status')
+            .then(res => res.json())
+            .then(data => {
+                setIsAuthenticated(data.authenticated);
+                setDiscordId(data.discordId || '');
+            });
     }, []);
+
+    const handleLogout = async () => {
+        try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            setIsAuthenticated(false);
+            setDiscordId('');
+        } catch (error) {
+            console.error('Error logging out:', error);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-white flex items-center justify-center p-4">
@@ -46,13 +67,31 @@ export default function Home() {
                         )}
                     </div>
 
-                    <a
-                        href="/settings"
-                        className="text-sm uppercase tracking-widest hover:text-emerald-500 transition-colors inline-flex items-center justify-center md:justify-start mt-6 md:mt-8"
-                    >
-                        Configure Settings 
-                        <span className="ml-2">→</span>
-                    </a>
+                    <div className="flex items-center justify-center md:justify-start space-x-6">
+                        {isAuthenticated ? (
+                            <div className="flex items-center space-x-4">
+                                <a
+                                    href="/settings"
+                                    className="text-sm uppercase tracking-widest hover:text-emerald-500 transition-colors"
+                                >
+                                    Settings
+                                </a>
+                                <button
+                                    onClick={handleLogout}
+                                    className="text-sm uppercase tracking-widest hover:text-emerald-500 transition-colors"
+                                >
+                                    Logout
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => window.location.href = `/api/auth/github`}
+                                className="text-sm uppercase tracking-widest hover:text-emerald-500 transition-colors"
+                            >
+                                Connect GitHub
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 {/* Right Side - Steps */}

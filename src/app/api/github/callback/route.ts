@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { userConfigStore } from '@/storage/userConfig';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
-    const state = searchParams.get('state'); // This is the Discord user ID
 
-    if (!code || !state) {
-        return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
+    if (!code) {
+        return NextResponse.json({ error: 'Missing code parameter' }, { status: 400 });
     }
 
     try {
@@ -28,18 +28,24 @@ export async function GET(request: Request) {
         const data = await tokenResponse.json();
         
         if (data.access_token) {
-            // Get existing config first
-            const existingConfig = userConfigStore.getConfig(state);
-            console.log('Existing config before token update:', existingConfig);
-
-            // Update token while preserving repo
-            userConfigStore.setConfig(state, {
-                githubToken: data.access_token,
-                githubRepo: existingConfig?.githubRepo || ''
+            // Set GitHub token cookie
+            const cookieStore = cookies();
+            cookieStore.set('github_token', data.access_token, {
+                httpOnly: true,
+                secure: true,
+                sameSite: 'lax',
+                maxAge: 60 * 60 * 24 * 30 // 30 days
             });
 
-            const updatedConfig = userConfigStore.getConfig(state);
-            console.log('Config after token update:', updatedConfig);
+            // If we have a Discord ID, update the user config
+            const discordId = searchParams.get('state');
+            if (discordId) {
+                const existingConfig = userConfigStore.getConfig(discordId);
+                userConfigStore.setConfig(discordId, {
+                    githubToken: data.access_token,
+                    githubRepo: existingConfig?.githubRepo || ''
+                });
+            }
 
             return NextResponse.redirect(new URL('/auth-success', request.url));
         }
