@@ -6,10 +6,19 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
     const discordId = searchParams.get('state');
+    const isProduction = process.env.NODE_ENV === 'production';
 
-    console.log('Auth Callback:', {
-        discordId,
-        hasCode: !!code
+    const cookieOptions = {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: 'lax' as const,
+        maxAge: 60 * 60 * 24 * 30 // 30 days
+    };
+
+    console.log('Auth Callback:', { 
+        hasCode: !!code,
+        hasDiscordId: !!discordId,
+        isProduction: process.env.NODE_ENV === 'production'
     });
 
     if (!code) {
@@ -45,12 +54,7 @@ export async function GET(request: Request) {
             
             // Set cookies
             const cookieStore = cookies();
-            cookieStore.set('github_token', data.access_token, {
-                httpOnly: true,
-                secure: true,
-                sameSite: 'lax',
-                maxAge: 60 * 60 * 24 * 30 // 30 days
-            });
+            cookieStore.set('github_token', data.access_token, cookieOptions);
             
             // IMPORTANT: Always use Discord ID if available
             const userId = discordId || githubUser.id.toString();
@@ -63,17 +67,12 @@ export async function GET(request: Request) {
                 }
             }
 
-            cookieStore.set('discord_id', userId, {
-                httpOnly: true,
-                secure: true,
-                sameSite: 'lax',
-                maxAge: 60 * 60 * 24 * 30 // 30 days
-            });
+            cookieStore.set('discord_id', userId, cookieOptions);
 
             // Store config with the correct ID
             userConfigStore.setConfig(userId, {
                 githubToken: data.access_token,
-                githubRepo: userConfigStore.getConfig(userId)?.githubRepo || ''
+                githubRepo: ''
             });
 
             console.log('Auth callback - Storing config for user:', {
@@ -82,7 +81,11 @@ export async function GET(request: Request) {
                 githubId: githubUser.id
             });
 
-            return NextResponse.redirect(new URL('/auth-success', request.url));
+            const redirectUrl = isProduction 
+                ? 'https://discordtriage.com/auth-success'
+                : 'http://localhost:3000/auth-success';
+
+            return NextResponse.redirect(new URL(redirectUrl));
         }
 
         return NextResponse.json({ error: 'Failed to get token' }, { status: 500 });
