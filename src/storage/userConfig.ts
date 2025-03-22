@@ -12,11 +12,8 @@ class UserConfigStore {
     private configPath: string;
 
     private constructor() {
-        // Use absolute path in production
-        this.configPath = process.env.NODE_ENV === 'production'
-            ? '/var/www/discordtriage/user-configs.json'
-            : path.join(process.cwd(), 'user-configs.json');
-        
+        // Always use absolute path
+        this.configPath = '/var/www/discordtriage/user-configs.json';
         console.log('UserConfigStore initialized with path:', this.configPath);
         this.loadConfigs();
     }
@@ -31,9 +28,13 @@ class UserConfigStore {
     public loadConfigs() {
         try {
             console.log('Loading configs from:', this.configPath);
-            const data = fs.readFileSync(this.configPath, 'utf8');
-            this.configs = JSON.parse(data);
-            console.log('Loaded configs:', Object.keys(this.configs));
+            if (fs.existsSync(this.configPath)) {
+                const data = fs.readFileSync(this.configPath, 'utf8');
+                this.configs = JSON.parse(data);
+                console.log('Loaded configs:', Object.keys(this.configs));
+            } else {
+                console.log('Config file does not exist at:', this.configPath);
+            }
         } catch (error) {
             console.error('Error loading configs:', error);
             this.configs = {};
