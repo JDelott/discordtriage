@@ -1,4 +1,5 @@
 import fs from 'fs';
+import path from 'path';
 
 interface UserConfig {
     githubToken: string;
@@ -8,8 +9,15 @@ interface UserConfig {
 class UserConfigStore {
     private configs: { [key: string]: UserConfig } = {};
     private static instance: UserConfigStore;
+    private configPath: string;
 
     private constructor() {
+        // Use absolute path in production
+        this.configPath = process.env.NODE_ENV === 'production'
+            ? '/var/www/discordtriage/user-configs.json'
+            : path.join(process.cwd(), 'user-configs.json');
+        
+        console.log('UserConfigStore initialized with path:', this.configPath);
         this.loadConfigs();
     }
 
@@ -22,11 +30,12 @@ class UserConfigStore {
 
     public loadConfigs() {
         try {
-            const data = fs.readFileSync('user-configs.json', 'utf8');
+            console.log('Loading configs from:', this.configPath);
+            const data = fs.readFileSync(this.configPath, 'utf8');
             this.configs = JSON.parse(data);
             console.log('Loaded configs:', Object.keys(this.configs));
         } catch (error) {
-            console.log('No existing configs found or error loading:', error);
+            console.error('Error loading configs:', error);
             this.configs = {};
         }
     }
@@ -39,18 +48,15 @@ class UserConfigStore {
 
     setConfig(userId: string, config: UserConfig) {
         console.log('Setting config for userId:', userId);
-        this.configs[userId] = {
-            githubToken: config.githubToken,
-            githubRepo: config.githubRepo
-        };
+        this.configs[userId] = config;
         this.saveConfigs();
-        console.log('Updated configs. Available IDs:', Object.keys(this.configs));
     }
 
     private saveConfigs() {
         try {
-            fs.writeFileSync('user-configs.json', JSON.stringify(this.configs, null, 2));
+            fs.writeFileSync(this.configPath, JSON.stringify(this.configs, null, 2));
             console.log('Configs saved successfully');
+            console.log('Updated configs. Available IDs:', Object.keys(this.configs));
         } catch (error) {
             console.error('Error saving configs:', error);
         }
