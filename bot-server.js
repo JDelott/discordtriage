@@ -11,13 +11,18 @@ console.log("Environment variables:", {
   path: "/var/www/discordtriage/.env",
 });
 
-// Force reload configs on bot start
+// Force reload configs on bot start with correct path
 const { userConfigStore } = require("./dist/storage/userConfig.js");
+
+// Set the correct working directory for config file
+process.chdir("/var/www/discordtriage");
 userConfigStore.loadConfigs();
 
 console.log(
   "Available configs on bot start:",
-  Object.keys(userConfigStore["configs"])
+  Object.keys(userConfigStore["configs"]),
+  "from path:",
+  process.cwd()
 );
 
 // Don't validate tokens here - let the command handler handle auth state
