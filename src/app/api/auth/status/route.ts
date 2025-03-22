@@ -6,6 +6,12 @@ export async function GET() {
     const githubToken = cookieStore.get('github_token')?.value;
     const discordId = cookieStore.get('discord_id')?.value;
     
+    console.log('Auth Status Check:', { 
+        hasGithubToken: !!githubToken,
+        hasDiscordId: !!discordId,
+        discordId 
+    });
+
     // Verify GitHub token is still valid
     if (githubToken) {
         try {

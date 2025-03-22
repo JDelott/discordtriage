@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation';
 
 export default function Settings() {
     const router = useRouter();
-    const [discordId, setDiscordId] = useState('');
     const [repo, setRepo] = useState('');
     const [message, setMessage] = useState('');
 
     useEffect(() => {
+        // Check auth and get existing settings
         fetch('/api/auth/status')
             .then(res => res.json())
             .then(data => {
@@ -17,7 +17,16 @@ export default function Settings() {
                     router.push('/');
                     return;
                 }
-                setDiscordId(data.discordId);
+                // Get user's existing settings
+                return fetch('/api/settings/get').then(res => res.json());
+            })
+            .then(data => {
+                if (data?.repo) {
+                    setRepo(data.repo);
+                }
+            })
+            .catch(() => {
+                router.push('/');
             });
     }, [router]);
 
@@ -27,7 +36,7 @@ export default function Settings() {
             const response = await fetch('/api/settings/update', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ discordId, repo }),
+                body: JSON.stringify({ repo }),
             });
             
             setMessage(response.ok ? 'Settings updated successfully!' : 'Failed to update settings.');
@@ -36,82 +45,55 @@ export default function Settings() {
         }
     };
 
-    const handleLogout = async () => {
-        try {
-            await fetch('/api/auth/logout', { method: 'POST' });
-            router.push('/');
-        } catch (error) {
-            setMessage('Error logging out.');
-        }
-    };
-
     return (
-        <div className="h-screen bg-white flex items-center">
-            <div className="container mx-auto px-8 max-w-xl relative">
-                {/* Decorative Element */}
-                <div className="absolute -top-4 -left-4 w-20 h-20 bg-emerald-100 -z-10" />
-
-                {/* Header */}
-                <div className="flex justify-between items-center mb-16">
-                    <h1 className="text-6xl font-normal tracking-tight">
-                        <span className="text-emerald-500">Settings</span>
+        <div className="min-h-screen bg-white flex items-center justify-center p-4">
+            <div className="container mx-auto px-4 md:px-8 max-w-2xl relative py-12 md:py-24">
+                {/* Decorative Elements */}
+                <div className="absolute -top-4 -left-4 w-16 md:w-20 h-16 md:h-20 bg-emerald-100 -z-10 rounded-lg" />
+                <div className="absolute bottom-8 right-8 w-24 md:w-32 h-24 md:h-32 bg-emerald-50 -z-10 rotate-12 rounded-lg" />
+                
+                {/* Content */}
+                <div className="text-center mb-12">
+                    <h1 className="text-4xl md:text-5xl font-normal mb-4 tracking-tight text-emerald-500">
+                        Settings
                     </h1>
-                    <button
-                        onClick={handleLogout}
-                        className="text-sm uppercase tracking-widest hover:text-emerald-500 transition-colors"
-                    >
-                        Logout
-                    </button>
+                    <p className="text-lg text-gray-600 mb-8">
+                        Configure your GitHub repository for issue creation.
+                    </p>
                 </div>
 
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-8">
+                <form onSubmit={handleSubmit} className="space-y-6 bg-white p-8 rounded-lg shadow-sm border border-gray-100">
                     <div>
-                        <label className="block">
-                            <span className="text-sm uppercase tracking-widest mb-2 block">Discord ID</span>
-                            <input
-                                type="text"
-                                value={discordId}
-                                disabled
-                                className="mt-2 block w-full px-4 py-3 bg-gray-100 text-gray-500 outline-none text-lg"
-                            />
+                        <label className="block text-sm uppercase tracking-widest text-gray-600 mb-2">
+                            GitHub Repository
                         </label>
+                        <input
+                            type="text"
+                            value={repo}
+                            onChange={(e) => setRepo(e.target.value)}
+                            placeholder="owner/repo (e.g., octocat/Hello-World)"
+                            className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        />
                     </div>
-
-                    <div>
-                        <label className="block">
-                            <span className="text-sm uppercase tracking-widest mb-2 block">GitHub Repository</span>
-                            <input
-                                type="text"
-                                value={repo}
-                                onChange={(e) => setRepo(e.target.value)}
-                                className="mt-2 block w-full px-4 py-3 bg-gray-50 focus:bg-emerald-50 transition-colors outline-none text-lg"
-                                placeholder="username/repository"
-                            />
-                        </label>
-                    </div>
-
+                    <button
+                        type="submit"
+                        className="w-full bg-black text-white px-6 py-3 rounded-lg hover:bg-emerald-500 transition-colors"
+                    >
+                        Save Settings
+                    </button>
                     {message && (
-                        <div className="text-sm text-emerald-500">{message}</div>
+                        <p className={`text-sm ${message.includes('success') ? 'text-emerald-500' : 'text-red-500'}`}>
+                            {message}
+                        </p>
                     )}
-
-                    <div className="pt-4">
-                        <button
-                            type="submit"
-                            className="bg-black text-white px-6 py-3 hover:bg-emerald-500 transition-colors"
-                        >
-                            Save Settings
-                        </button>
-                    </div>
                 </form>
 
-                {/* Back Link */}
-                <div className="mt-16">
+                <div className="mt-8 text-center">
                     <a
                         href="/"
-                        className="text-sm uppercase tracking-widest hover:text-emerald-500 transition-colors inline-flex items-center"
+                        className="text-sm uppercase tracking-widest hover:text-emerald-500 transition-colors"
                     >
-                        ← Back to Home
+                        Back to Home
                     </a>
                 </div>
             </div>

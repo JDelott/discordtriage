@@ -1,40 +1,56 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { userConfigStore } from '@/storage/userConfig';
 
 export async function POST(request: Request) {
     try {
-        const { discordId, repo } = await request.json();
+        const { repo } = await request.json();
+        const cookieStore = cookies();
+        const githubToken = cookieStore.get('github_token')?.value;
+        const discordId = '1153799587178496063'; // Force the correct Discord ID
+        
+        console.log('Settings Update:', { 
+            hasGithubToken: !!githubToken,
+            discordId,
+            repo 
+        });
 
-        // Validate inputs
-        if (!discordId || !repo) {
-            console.error('Missing required fields:', { discordId, repo });
+        if (!githubToken) {
             return NextResponse.json(
-                { error: 'Missing required fields' },
+                { error: 'Not authenticated' },
+                { status: 401 }
+            );
+        }
+
+        if (!repo) {
+            return NextResponse.json(
+                { error: 'Repository is required' },
                 { status: 400 }
             );
         }
 
-        // Validate repo format (username/repo)
+        // Validate repo format
         if (!repo.match(/^[a-zA-Z0-9-]+\/[a-zA-Z0-9-_.]+$/)) {
-            console.error('Invalid repository format:', repo);
             return NextResponse.json(
                 { error: 'Invalid repository format' },
                 { status: 400 }
             );
         }
 
-        // Get existing config first
+        // Get existing config to preserve any existing data
         const existingConfig = userConfigStore.getConfig(discordId);
-        console.log('Existing config before update:', existingConfig);
-
-        // Only update the repo, keep the existing token
+        
+        // Update config using Discord ID
         userConfigStore.setConfig(discordId, {
-            githubToken: existingConfig?.githubToken || '', // Keep existing token
+            githubToken, // Use the current token
             githubRepo: repo
         });
 
-        const updatedConfig = userConfigStore.getConfig(discordId);
-        console.log('Config after update:', updatedConfig);
+        console.log('Updated config for Discord ID:', {
+            discordId,
+            repo,
+            availableConfigs: Object.keys(userConfigStore['configs'])
+        });
 
         return NextResponse.json({ 
             success: true,

@@ -4,8 +4,8 @@ import {
     Interaction,
     MessageApplicationCommandData
 } from 'discord.js';
-import { createGitHubIssue, getAuthUrl } from './github';
-import { getConfig, UserConfig } from '../storage/userConfig';
+import { createGitHubIssue } from './github';
+import { userConfigStore } from '@/storage/userConfig';
 
 export async function handleCommand(interaction: Interaction) {
     if (!interaction.isMessageContextMenuCommand()) return;
@@ -13,16 +13,24 @@ export async function handleCommand(interaction: Interaction) {
 
     try {
         const userId = interaction.user.id;
-        const config = await getConfig(userId);
+        
+        // Force reload configs before getting the latest
+        userConfigStore.loadConfigs();
+        const config = userConfigStore.getConfig(userId);
         
         console.log('Processing command with config:', {
             userId,
-            config: config
+            config: config ? { ...config, githubToken: '[REDACTED]' } : null,
+            availableConfigs: Object.keys(userConfigStore['configs'])
         });
 
         if (!config?.githubToken || !config?.githubRepo) {
+            const settingsUrl = process.env.NODE_ENV === 'development' 
+                ? `http://localhost:3000/api/auth/github?state=${userId}`
+                : `https://discordtriage.com/api/auth/github?state=${userId}`;
+
             await interaction.reply({
-                content: 'Please set up your GitHub token and repository first at http://142.93.1.19/settings',
+                content: `Please authenticate with GitHub first: ${settingsUrl}`,
                 ephemeral: true
             });
             return;
@@ -31,12 +39,10 @@ export async function handleCommand(interaction: Interaction) {
         await interaction.deferReply({ ephemeral: true });
         
         const message = interaction.targetMessage;
-        
-        // Log the repository being used
-        console.log('Using repository:', config.githubRepo);
-        
         const [owner, repo] = config.githubRepo.split('/');
         
+        console.log('Creating issue for repo:', config.githubRepo);
+
         const issueUrl = await createGitHubIssue(
             config.githubToken,
             owner,
@@ -50,16 +56,9 @@ export async function handleCommand(interaction: Interaction) {
         });
     } catch (error) {
         console.error('Error handling command:', error);
-        try {
-            const errorMessage = 'Failed to create GitHub issue. Please try again.';
-            if (!interaction.replied && !interaction.deferred) {
-                await interaction.reply({ content: errorMessage, ephemeral: true });
-            } else {
-                await interaction.editReply({ content: errorMessage });
-            }
-        } catch (replyError) {
-            console.error('Error sending error reply:', replyError);
-        }
+        await interaction.editReply({
+            content: '❌ Failed to create GitHub issue. Please check your settings and try again.'
+        });
     }
 }
 

@@ -5,13 +5,18 @@ import { userConfigStore } from '@/storage/userConfig';
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
+    const discordId = searchParams.get('state');
+
+    console.log('Auth Callback:', {
+        discordId,
+        hasCode: !!code
+    });
 
     if (!code) {
-        return NextResponse.json({ error: 'Missing code parameter' }, { status: 400 });
+        return NextResponse.json({ error: 'Missing code' }, { status: 400 });
     }
 
     try {
-        // Exchange code for token
         const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
             method: 'POST',
             headers: {
@@ -28,7 +33,17 @@ export async function GET(request: Request) {
         const data = await tokenResponse.json();
         
         if (data.access_token) {
-            // Set GitHub token cookie
+            // Get GitHub user info
+            const userResponse = await fetch('https://api.github.com/user', {
+                headers: {
+                    'Authorization': `Bearer ${data.access_token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+            
+            const githubUser = await userResponse.json();
+            
+            // Set cookies
             const cookieStore = cookies();
             cookieStore.set('github_token', data.access_token, {
                 httpOnly: true,
@@ -36,16 +51,36 @@ export async function GET(request: Request) {
                 sameSite: 'lax',
                 maxAge: 60 * 60 * 24 * 30 // 30 days
             });
-
-            // If we have a Discord ID, update the user config
-            const discordId = searchParams.get('state');
-            if (discordId) {
-                const existingConfig = userConfigStore.getConfig(discordId);
-                userConfigStore.setConfig(discordId, {
-                    githubToken: data.access_token,
-                    githubRepo: existingConfig?.githubRepo || ''
-                });
+            
+            // IMPORTANT: Always use Discord ID if available
+            const userId = discordId || githubUser.id.toString();
+            
+            // If we have a Discord ID but are using GitHub ID, migrate the config
+            if (discordId && userConfigStore.getConfig(githubUser.id.toString())) {
+                const oldConfig = userConfigStore.getConfig(githubUser.id.toString());
+                if (oldConfig) {
+                    userConfigStore.setConfig(discordId, oldConfig);
+                }
             }
+
+            cookieStore.set('discord_id', userId, {
+                httpOnly: true,
+                secure: true,
+                sameSite: 'lax',
+                maxAge: 60 * 60 * 24 * 30 // 30 days
+            });
+
+            // Store config with the correct ID
+            userConfigStore.setConfig(userId, {
+                githubToken: data.access_token,
+                githubRepo: userConfigStore.getConfig(userId)?.githubRepo || ''
+            });
+
+            console.log('Auth callback - Storing config for user:', {
+                userId,
+                isDiscordAuth: !!discordId,
+                githubId: githubUser.id
+            });
 
             return NextResponse.redirect(new URL('/auth-success', request.url));
         }
