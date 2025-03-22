@@ -9,12 +9,10 @@ interface UserConfig {
 class UserConfigStore {
     private configs: { [key: string]: UserConfig } = {};
     private static instance: UserConfigStore;
-    private configPath: string;
+    private configPath: string = '/var/www/discordtriage/user-configs.json';
 
     private constructor() {
-        // Always use absolute path
-        this.configPath = '/var/www/discordtriage/user-configs.json';
-        console.log('UserConfigStore initialized with path:', this.configPath);
+        console.log('Bot UserConfigStore initializing with path:', this.configPath);
         this.loadConfigs();
     }
 
@@ -27,28 +25,27 @@ class UserConfigStore {
 
     public loadConfigs() {
         try {
-            console.log('Loading configs from:', this.configPath);
+            console.log('Bot loading configs from:', this.configPath);
             if (fs.existsSync(this.configPath)) {
                 const data = fs.readFileSync(this.configPath, 'utf8');
                 this.configs = JSON.parse(data);
-                console.log('Loaded configs:', Object.keys(this.configs));
+                console.log('Bot loaded configs:', Object.keys(this.configs));
             } else {
-                console.log('Config file does not exist at:', this.configPath);
+                console.log('Bot config file does not exist at:', this.configPath);
             }
         } catch (error) {
-            console.error('Error loading configs:', error);
+            console.error('Bot error loading configs:', error);
             this.configs = {};
         }
     }
 
     getConfig(userId: string): UserConfig | null {
-        console.log('Getting config for userId:', userId);
-        console.log('Available configs:', Object.keys(this.configs));
+        this.loadConfigs();
         return this.configs[userId] || null;
     }
 
     setConfig(userId: string, config: UserConfig) {
-        console.log('Setting config for userId:', userId);
+        this.loadConfigs();
         this.configs[userId] = config;
         this.saveConfigs();
     }
@@ -56,10 +53,10 @@ class UserConfigStore {
     private saveConfigs() {
         try {
             fs.writeFileSync(this.configPath, JSON.stringify(this.configs, null, 2));
-            console.log('Configs saved successfully');
-            console.log('Updated configs. Available IDs:', Object.keys(this.configs));
+            console.log('Bot configs saved successfully');
+            console.log('Bot updated configs. Available IDs:', Object.keys(this.configs));
         } catch (error) {
-            console.error('Error saving configs:', error);
+            console.error('Bot error saving configs:', error);
         }
     }
 
