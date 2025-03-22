@@ -11,21 +11,30 @@ console.log("Environment variables:", {
   path: "/var/www/discordtriage/.env",
 });
 
-// Force reload configs on bot start with correct path
+// Force reload configs on bot start with absolute paths
+const path = require("path");
 const { userConfigStore } = require("./dist/storage/userConfig.js");
 
-// Set the correct working directory for config file
-process.chdir("/var/www/discordtriage");
+// Set absolute path for config file
+const configPath = path.join("/var/www/discordtriage", "user-configs.json");
+console.log("Loading configs from:", configPath);
+
+// Read config file directly to verify contents
+const fs = require("fs");
+try {
+  const rawConfig = fs.readFileSync(configPath, "utf8");
+  console.log("Raw config file contents:", rawConfig);
+} catch (error) {
+  console.error("Error reading config file:", error);
+}
+
 userConfigStore.loadConfigs();
 
 console.log(
-  "Available configs on bot start:",
-  Object.keys(userConfigStore["configs"]),
-  "from path:",
-  process.cwd()
+  "Available configs after load:",
+  Object.keys(userConfigStore["configs"])
 );
 
-// Don't validate tokens here - let the command handler handle auth state
 const { startBot } = require("./dist/bot/index.js");
 
 // Start the bot
