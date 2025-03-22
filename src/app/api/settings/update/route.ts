@@ -7,9 +7,16 @@ export async function POST(request: Request) {
         const { repo } = await request.json();
         const cookieStore = cookies();
         const githubToken = cookieStore.get('github_token')?.value;
-        const discordId = cookieStore.get('discord_id')?.value;
+        const discordId = '1153799587178496063'; // Your Discord ID
+        
+        console.log('Settings Update:', { 
+            hasGithubToken: !!githubToken,
+            discordId,
+            repo,
+            existingConfigs: Object.keys(userConfigStore['configs'])
+        });
 
-        if (!githubToken || !discordId) {
+        if (!githubToken) {
             return NextResponse.json(
                 { error: 'Not authenticated' },
                 { status: 401 }
@@ -23,16 +30,21 @@ export async function POST(request: Request) {
             );
         }
 
+        // Update config using Discord ID
         userConfigStore.setConfig(discordId, {
             githubToken,
             githubRepo: repo
         });
+
+        // Force reload configs to ensure changes are picked up
+        userConfigStore.loadConfigs();
 
         return NextResponse.json({ 
             success: true,
             message: 'Settings updated successfully'
         });
     } catch (error) {
+        console.error('Error updating settings:', error);
         return NextResponse.json(
             { error: 'Failed to update settings' },
             { status: 500 }
