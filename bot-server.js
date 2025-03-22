@@ -17,7 +17,7 @@ console.log("Environment variables:", {
 // Set working directory explicitly
 process.chdir("/var/www/discordtriage");
 
-// Read and validate config file
+// Read config file directly to verify contents
 const fs = require("fs");
 const configPath = "/var/www/discordtriage/user-configs.json";
 
@@ -42,6 +42,9 @@ try {
   fs.writeFileSync(configPath, JSON.stringify(configs, null, 2), {
     mode: 0o666, // Read/write for all users
   });
+
+  // Important: Set file ownership to match web app
+  require("child_process").execSync(`chown www-data:www-data ${configPath}`);
 } catch (error) {
   console.error("Error with config file:", error);
   process.exit(1);
@@ -52,11 +55,17 @@ const { userConfigStore } = require("./dist/storage/userConfig.js");
 const { startBot } = require("./dist/bot/index.js");
 
 // Force reload configs
+console.log("Bot server loading configs...");
 userConfigStore.loadConfigs();
-console.log(
-  "Available configs in bot after load:",
-  Object.keys(userConfigStore["configs"])
-);
+
+// Verify configs loaded correctly
+const loadedConfigs = Object.keys(userConfigStore["configs"]);
+console.log("Available configs in bot after load:", loadedConfigs);
+
+if (loadedConfigs.length === 0) {
+  console.error("Failed to load configs - exiting bot");
+  process.exit(1);
+}
 
 // Start the bot
 startBot().catch((error) => {
