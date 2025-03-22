@@ -11,35 +11,16 @@ console.log("Environment variables:", {
   path: "/var/www/discordtriage/.env",
 });
 
-// Force reload configs on bot start and verify token
+// Force reload configs on bot start
 const { userConfigStore } = require("./dist/storage/userConfig.js");
 userConfigStore.loadConfigs();
 
-// Verify GitHub tokens are valid
-const configs = userConfigStore["configs"];
-Object.entries(configs).forEach(async ([userId, config]) => {
-  try {
-    const response = await fetch("https://api.github.com/user", {
-      headers: {
-        Authorization: `token ${config.githubToken}`,
-        Accept: "application/vnd.github.v3+json",
-      },
-    });
-    if (!response.ok) {
-      console.log(`Invalid token found for user ${userId}, removing config`);
-      delete configs[userId];
-      userConfigStore.saveConfigs();
-    }
-  } catch (error) {
-    console.error(`Error verifying token for user ${userId}:`, error);
-  }
-});
-
 console.log(
-  "Available configs after validation:",
+  "Available configs on bot start:",
   Object.keys(userConfigStore["configs"])
 );
 
+// Don't validate tokens here - let the command handler handle auth state
 const { startBot } = require("./dist/bot/index.js");
 
 // Start the bot
