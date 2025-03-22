@@ -21,25 +21,21 @@ process.chdir("/var/www/discordtriage");
 const fs = require("fs");
 const configPath = "/var/www/discordtriage/user-configs.json";
 
-// Create config file if it doesn't exist
-if (!fs.existsSync(configPath)) {
-  console.log("Creating new config file at:", configPath);
-  fs.writeFileSync(configPath, "{}", "utf8");
-}
-
-// Ensure file permissions are correct
-fs.chmodSync(configPath, 0o666);
+let initialConfigs = {};
 
 try {
   const rawConfig = fs.readFileSync(configPath, "utf8");
   console.log("Raw config file contents:", rawConfig);
 
   // Parse and validate config
-  const configs = JSON.parse(rawConfig);
-  console.log("Available configs before bot start:", Object.keys(configs));
+  initialConfigs = JSON.parse(rawConfig);
+  console.log(
+    "Available configs before bot start:",
+    Object.keys(initialConfigs)
+  );
 
   // Write back validated config with proper permissions
-  fs.writeFileSync(configPath, JSON.stringify(configs, null, 2), {
+  fs.writeFileSync(configPath, JSON.stringify(initialConfigs, null, 2), {
     mode: 0o666, // Read/write for all users
   });
 
@@ -50,17 +46,21 @@ try {
   process.exit(1);
 }
 
-// Now initialize the store and bot
+// Now initialize the store with initial configs
 const { userConfigStore } = require("./dist/storage/userConfig.js");
+
+// Force set the initial configs
+userConfigStore["configs"] = initialConfigs;
+console.log(
+  "Manually set initial configs:",
+  Object.keys(userConfigStore["configs"])
+);
+
 const { startBot } = require("./dist/bot/index.js");
 
-// Force reload configs
-console.log("Bot server loading configs...");
-userConfigStore.loadConfigs();
-
-// Verify configs loaded correctly
+// Verify configs are set
 const loadedConfigs = Object.keys(userConfigStore["configs"]);
-console.log("Available configs in bot after load:", loadedConfigs);
+console.log("Available configs in bot:", loadedConfigs);
 
 if (loadedConfigs.length === 0) {
   console.error("Failed to load configs - exiting bot");
