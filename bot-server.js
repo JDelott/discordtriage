@@ -11,27 +11,17 @@ console.log("Environment variables:", {
   path: "/var/www/discordtriage/.env",
 });
 
-// Force reload configs on bot start with absolute paths
-const path = require("path");
+// Set production environment
+process.env.NODE_ENV = "production";
+
+// Force reload configs on bot start
 const { userConfigStore } = require("./dist/storage/userConfig.js");
 
-// Set absolute path for config file
-const configPath = path.join("/var/www/discordtriage", "user-configs.json");
-console.log("Loading configs from:", configPath);
-
-// Read config file directly to verify contents
-const fs = require("fs");
-try {
-  const rawConfig = fs.readFileSync(configPath, "utf8");
-  console.log("Raw config file contents:", rawConfig);
-} catch (error) {
-  console.error("Error reading config file:", error);
-}
-
+// Verify configs are loaded
+console.log("Bot server loading configs...");
 userConfigStore.loadConfigs();
-
 console.log(
-  "Available configs after load:",
+  "Available configs in bot:",
   Object.keys(userConfigStore["configs"])
 );
 
