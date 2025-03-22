@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { startBot } from '../../../bot';
+import { startBot, client } from '../../../bot';
+import { Client } from 'discord.js';
 
 // Track bot status globally using Node's global object
 declare global {
@@ -12,17 +13,22 @@ if (typeof global.botStarted === 'undefined') {
 
 export async function GET() {
     try {
-        // Only start the bot once
-        if (!global.botStarted) {
-            await startBot();
-            global.botStarted = true;
-            console.log('Bot started successfully');
+        // Check if bot is already online
+        if ((client as Client).isReady()) {
+            return NextResponse.json({ status: 'online' });
         }
-        
-        return NextResponse.json({ status: 'Bot is online!' });
+
+        // Start bot if not already started
+        if (!global.botStarted) {
+            const success = await startBot();
+            global.botStarted = success;
+        }
+
+        return NextResponse.json({
+            status: (client as Client).isReady() ? 'online' : 'offline'
+        });
     } catch (error) {
-        console.error('Failed to start bot:', error);
-        global.botStarted = false;
-        return NextResponse.json({ error: 'Failed to start bot' }, { status: 500 });
+        console.error('Error checking bot status:', error);
+        return NextResponse.json({ status: 'error' }, { status: 500 });
     }
 }

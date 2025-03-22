@@ -24,7 +24,7 @@ if (missingVars.length > 0) {
 }
 
 // Export the client so it can be used in other files
-export const client = new Client({
+export const client: Client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
@@ -32,8 +32,8 @@ export const client = new Client({
     ]
 });
 
-// Initialize bot
-const initBot = async () => {
+// Export the startBot function for the API route
+export const startBot = async (): Promise<boolean> => {
     try {
         client.on('ready', async () => {
             console.log(`Bot is online as ${client.user?.tag}`);
@@ -53,9 +53,10 @@ const initBot = async () => {
 
         await client.login(process.env.DISCORD_TOKEN);
         console.log('Bot logged in successfully');
+        return true;
     } catch (error) {
         console.error('Failed to initialize bot:', error);
-        process.exit(1);
+        return false;
     }
 };
 
@@ -85,5 +86,7 @@ process.on('SIGTERM', () => {
     process.exit(0);
 });
 
-// Start the bot
-initBot().catch(console.error);
+// Start the bot if this file is run directly
+if (require.main === module) {
+    startBot().catch(console.error);
+}
