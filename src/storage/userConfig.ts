@@ -12,8 +12,16 @@ class UserConfigStore {
     private configPath: string = '/var/www/discordtriage/user-configs.json';
 
     private constructor() {
-        console.log('Bot UserConfigStore initializing with path:', this.configPath);
-        this.loadConfigs();
+        console.log('Bot UserConfigStore initializing...');
+        // Try to load existing configs first
+        try {
+            const rawConfig = fs.readFileSync(this.configPath, 'utf8');
+            this.configs = JSON.parse(rawConfig);
+            console.log('Loaded initial configs:', Object.keys(this.configs));
+        } catch (error) {
+            console.error('Error loading initial configs:', error);
+            this.configs = {};
+        }
     }
 
     static getInstance(): UserConfigStore {
@@ -28,24 +36,31 @@ class UserConfigStore {
             console.log('Bot loading configs from:', this.configPath);
             if (fs.existsSync(this.configPath)) {
                 const data = fs.readFileSync(this.configPath, 'utf8');
-                this.configs = JSON.parse(data);
-                console.log('Bot loaded configs:', Object.keys(this.configs));
+                const newConfigs = JSON.parse(data);
+                // Only update if we got valid data
+                if (Object.keys(newConfigs).length > 0) {
+                    this.configs = newConfigs;
+                    console.log('Bot loaded configs:', Object.keys(this.configs));
+                } else {
+                    console.log('No configs found in file, keeping existing:', Object.keys(this.configs));
+                }
             } else {
-                console.log('Bot config file does not exist at:', this.configPath);
+                console.log('Config file does not exist at:', this.configPath);
             }
         } catch (error) {
             console.error('Bot error loading configs:', error);
-            this.configs = {};
+            // Don't clear existing configs on error
+            console.log('Keeping existing configs:', Object.keys(this.configs));
         }
     }
 
     getConfig(userId: string): UserConfig | null {
-        this.loadConfigs();
+        console.log('Getting config for userId:', userId, 'Available:', Object.keys(this.configs));
         return this.configs[userId] || null;
     }
 
     setConfig(userId: string, config: UserConfig) {
-        this.loadConfigs();
+        console.log('Setting config for userId:', userId);
         this.configs[userId] = config;
         this.saveConfigs();
     }
