@@ -20,14 +20,18 @@ export async function handleCommand(interaction: Interaction) {
         
         console.log('Processing command with config:', {
             userId,
-            config: config ? { ...config, githubToken: '[REDACTED]' } : null,
+            config: config ? {
+                discordId: userId,
+                githubToken: '[TOKEN HIDDEN]',
+                githubRepo: config.githubRepo
+            } : null,
             availableConfigs: Object.keys(userConfigStore['configs'])
         });
 
         if (!config?.githubToken || !config?.githubRepo) {
-            const settingsUrl = process.env.NODE_ENV === 'development' 
-                ? `http://localhost:3000/api/auth/github?state=${userId}`
-                : `https://discordtriage.com/api/auth/github?state=${userId}`;
+            const settingsUrl = process.env.NODE_ENV === 'production' 
+                ? `https://discordtriage.com/api/auth/github?state=${userId}`
+                : `http://localhost:3000/api/auth/github?state=${userId}`;
 
             await interaction.reply({
                 content: `Please authenticate with GitHub first: ${settingsUrl}`,
