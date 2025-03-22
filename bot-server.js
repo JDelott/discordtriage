@@ -1,5 +1,5 @@
 require("dotenv").config({
-  path: "/var/www/discordtriage/.env", // Use absolute path in production
+  path: "/var/www/discordtriage/.env",
 });
 require("./register-aliases");
 
@@ -11,14 +11,14 @@ console.log("Environment variables:", {
   path: "/var/www/discordtriage/.env",
 });
 
-// Verify required environment variables
-const requiredVars = ["DISCORD_TOKEN", "DISCORD_APPLICATION_ID"];
-const missingVars = requiredVars.filter((varName) => !process.env[varName]);
+// Force reload configs on bot start
+const { userConfigStore } = require("./dist/storage/userConfig.js");
+userConfigStore.loadConfigs();
 
-if (missingVars.length > 0) {
-  console.error("Missing required environment variables:", missingVars);
-  process.exit(1);
-}
+console.log(
+  "Available configs after load:",
+  Object.keys(userConfigStore["configs"])
+);
 
 const { startBot } = require("./dist/bot/index.js");
 
