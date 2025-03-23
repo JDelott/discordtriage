@@ -100,6 +100,7 @@ export async function startBot(): Promise<boolean> {
         client.on('ready', async () => {
             console.log(`Logged in as ${client.user?.tag}`);
             await registerCommands();
+            isInitialized = true;
         });
         
         client.on('error', (error) => {
@@ -117,7 +118,19 @@ export async function startBot(): Promise<boolean> {
             reconnect();
         });
 
-        isInitialized = true;
+        // Proper cleanup
+        process.on('SIGINT', () => {
+            console.log('Received SIGINT. Cleaning up...');
+            if (client?.isReady()) client.destroy();
+            process.exit(0);
+        });
+
+        process.on('SIGTERM', () => {
+            console.log('Received SIGTERM. Cleaning up...');
+            if (client?.isReady()) client.destroy();
+            process.exit(0);
+        });
+
         return true;
     } catch (error) {
         console.error('Failed to start bot:', error);
@@ -137,19 +150,6 @@ const reconnect = () => {
         }
     }, 5000);
 };
-
-// Handle process termination
-process.on('SIGINT', () => {
-    console.log('Received SIGINT. Cleaning up...');
-    if (client) client.destroy();
-    process.exit(0);
-});
-
-process.on('SIGTERM', () => {
-    console.log('Received SIGTERM. Cleaning up...');
-    if (client) client.destroy();
-    process.exit(0);
-});
 
 // Start the bot if this file is run directly
 if (require.main === module) {
