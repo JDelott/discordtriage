@@ -3,6 +3,10 @@ require("dotenv").config({
 });
 require("./register-aliases");
 
+const { CONFIG_PATHS } = require("./dist/bot/config/paths");
+const { userConfigStore } = require("./dist/storage/userConfig.js");
+const { startBot } = require("./dist/bot/index.js");
+
 // Set production environment
 process.env.NODE_ENV = "production";
 
@@ -32,10 +36,6 @@ if (fs.existsSync(configPath)) {
 } else {
   console.error("Config file not found at:", configPath);
 }
-
-// Initialize store and bot
-const { userConfigStore } = require("./dist/storage/userConfig.js");
-const { startBot } = require("./dist/bot/index.js");
 
 // Force load configs
 userConfigStore.loadConfigs();
