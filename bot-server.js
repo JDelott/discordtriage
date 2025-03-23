@@ -17,61 +17,50 @@ console.log("Environment variables:", {
 // Set working directory explicitly
 process.chdir("/var/www/discordtriage");
 
-// Read config file directly to verify contents
-const fs = require("fs");
-const configPath = "/var/www/discordtriage/user-configs.json";
-
-let initialConfigs = {};
-
-try {
-  const rawConfig = fs.readFileSync(configPath, "utf8");
-  console.log("Raw config file contents:", rawConfig);
-
-  // Parse and validate config
-  initialConfigs = JSON.parse(rawConfig);
-  console.log(
-    "Available configs before bot start:",
-    Object.keys(initialConfigs)
-  );
-
-  // Write back validated config with proper permissions
-  fs.writeFileSync(configPath, JSON.stringify(initialConfigs, null, 2), {
-    mode: 0o666, // Read/write for all users
-  });
-
-  // Important: Set file ownership to match web app
-  require("child_process").execSync(`chown www-data:www-data ${configPath}`);
-} catch (error) {
-  console.error("Error with config file:", error);
-  process.exit(1);
-}
-
-// Now initialize the store with initial configs
+// Initialize store and bot
 const { userConfigStore } = require("./dist/storage/userConfig.js");
-
-// Force set the initial configs
-userConfigStore["configs"] = initialConfigs;
-console.log(
-  "Manually set initial configs:",
-  Object.keys(userConfigStore["configs"])
-);
-
 const { startBot } = require("./dist/bot/index.js");
 
-// Verify configs are set
-const loadedConfigs = Object.keys(userConfigStore["configs"]);
-console.log("Available configs in bot:", loadedConfigs);
+// Function to load configs with retry
+async function loadConfigsWithRetry(maxRetries = 5, delayMs = 2000) {
+  for (let i = 0; i < maxRetries; i++) {
+    console.log(`Attempt ${i + 1} to load configs...`);
 
-if (loadedConfigs.length === 0) {
-  console.error("Failed to load configs - exiting bot");
-  process.exit(1);
+    userConfigStore.loadConfigs();
+    const loadedConfigs = Object.keys(userConfigStore["configs"]);
+    console.log("Available configs in bot:", loadedConfigs);
+
+    if (loadedConfigs.length > 0) {
+      console.log("Successfully loaded configs!");
+      return true;
+    }
+
+    console.log(`No configs loaded, retrying in ${delayMs}ms...`);
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+
+  console.error("Failed to load configs after retries");
+  return false;
+}
+
+// Start the bot with retries
+async function startBotWithRetry() {
+  try {
+    const configsLoaded = await loadConfigsWithRetry();
+    if (!configsLoaded) {
+      console.error("Could not load configs, but starting bot anyway");
+    }
+
+    await startBot();
+    console.log("Bot started successfully");
+  } catch (error) {
+    console.error("Error starting bot:", error);
+    process.exit(1);
+  }
 }
 
 // Start the bot
-startBot().catch((error) => {
-  console.error("Failed to start bot:", error);
-  process.exit(1);
-});
+startBotWithRetry();
 
 // Handle process termination
 process.on("SIGINT", () => {
