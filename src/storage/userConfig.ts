@@ -50,9 +50,14 @@ class UserConfigStore {
             // Validate structure
             if (typeof parsed === 'object' && parsed !== null) {
                 this.configs = parsed;
-                console.log('Loaded configs:', {
+                // Safe logging that doesn't expose tokens
+                console.log('Loaded configs for users:', {
                     userIds: Object.keys(this.configs),
-                    configCount: Object.keys(this.configs).length
+                    configsWithTokens: Object.entries(this.configs).map(([id, config]) => ({
+                        userId: id,
+                        hasToken: !!config.githubToken,
+                        repo: config.githubRepo
+                    }))
                 });
             } else {
                 throw new Error('Invalid config structure');
@@ -74,20 +79,24 @@ class UserConfigStore {
         // Always force reload before getting config
         this.forceLoadConfigs();
         
-        console.log('Getting config for userId:', userId);
-        console.log('Available configs:', Object.keys(this.configs));
+        console.log('Getting config for userId:', userId, {
+            hasConfig: !!this.configs[userId],
+            hasToken: !!this.configs[userId]?.githubToken,
+            repo: this.configs[userId]?.githubRepo
+        });
         
-        const config = this.configs[userId];
-        console.log('Found config:', config ? 'yes' : 'no');
-        
-        return config || null;
+        return this.configs[userId] || null;
     }
 
     setConfig(userId: string, config: UserConfig) {
         // Always force reload before setting
         this.forceLoadConfigs();
         
-        console.log('Setting config for userId:', userId);
+        console.log('Setting config for userId:', userId, {
+            hasToken: !!config.githubToken,
+            repo: config.githubRepo
+        });
+        
         this.configs[userId] = config;
         this.saveConfigs();
     }
@@ -96,8 +105,7 @@ class UserConfigStore {
         try {
             const data = JSON.stringify(this.configs, null, 2);
             fs.writeFileSync(this.configPath, data, 'utf8');
-            console.log('Configs saved successfully');
-            console.log('Available configs after save:', Object.keys(this.configs));
+            console.log('Configs saved. Available users:', Object.keys(this.configs));
         } catch (error) {
             console.error('Error saving configs:', error);
         }
