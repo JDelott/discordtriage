@@ -12,8 +12,17 @@ class UserConfigStore {
     private configPath: string;
 
     private constructor() {
+        // Use absolute path for both bot and web server
         this.configPath = '/var/www/discordtriage/user-configs.json';
-        console.log('Initializing UserConfigStore');
+        console.log('Initializing UserConfigStore with path:', this.configPath);
+        
+        // Create directory if it doesn't exist
+        const dir = '/var/www/discordtriage';
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+        
+        this.configs = {};
         this.loadConfigs();
     }
 
