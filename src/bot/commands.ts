@@ -35,22 +35,42 @@ export async function registerCommands() {
 }
 
 export async function handleCommand(interaction: Interaction) {
-    if (!interaction.isMessageContextMenuCommand()) return;
-    if (interaction.commandName !== 'Create GitHub Issue') return;
+    // Add detailed logging
+    console.log('Received interaction:', {
+        type: interaction.type,
+        commandName: interaction.isCommand() ? interaction.commandName : 'not a command',
+        userId: interaction.user?.id,
+        guildId: interaction.guildId
+    });
+
+    if (!interaction.isMessageContextMenuCommand()) {
+        console.log('Interaction is not a message context menu command');
+        return;
+    }
+
+    if (interaction.commandName !== 'Create GitHub Issue') {
+        console.log('Command name does not match:', interaction.commandName);
+        return;
+    }
 
     try {
         const userId = interaction.user.id;
-        console.log('Handling command for user:', userId);
+        console.log('Processing command for user:', userId);
         
-        // Force reload configs before getting the latest
+        // Check if commands are registered
+        const commands = await interaction.client.application?.commands.fetch();
+        console.log('Available commands:', commands?.map(c => c.name));
+        
+        // Load and verify config
         userConfigStore.loadConfigs();
         const config = userConfigStore.getConfig(userId);
         
-        console.log('Processing command with config:', {
+        console.log('User config status:', {
             userId,
             hasConfig: !!config,
-            repo: config?.githubRepo,
-            availableConfigs: Object.keys(userConfigStore['configs'])
+            hasToken: !!config?.githubToken,
+            hasRepo: !!config?.githubRepo,
+            repo: config?.githubRepo
         });
 
         if (!config?.githubToken || !config?.githubRepo) {
@@ -91,7 +111,7 @@ export async function handleCommand(interaction: Interaction) {
             });
         }
     } catch (error) {
-        console.error('Error handling command:', error);
+        console.error('Detailed command error:', error);
         if (interaction.deferred) {
             await interaction.editReply({
                 content: '❌ Failed to create GitHub issue. Please check your settings and try again.'
