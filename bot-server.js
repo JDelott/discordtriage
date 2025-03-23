@@ -24,6 +24,11 @@ console.log("Environment variables status:", {
 const { userConfigStore } = require("./dist/storage/userConfig.js");
 const { startBot } = require("./dist/bot/index.js");
 
+// Force load configs before starting bot
+console.log("Loading initial configs...");
+userConfigStore.loadConfigs();
+console.log("Initial configs loaded:", Object.keys(userConfigStore.configs));
+
 // Start the bot
 startBot().catch((error) => {
   console.error("Failed to start bot:", error);
