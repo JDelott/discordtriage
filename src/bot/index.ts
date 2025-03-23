@@ -90,12 +90,10 @@ export async function startBot(): Promise<boolean> {
         console.error('File access error:', error);
     }
 
-    // Force load configs before starting bot
-    userConfigStore.loadConfigs();
-    console.log('Bot starting with configs:', Object.keys(userConfigStore['configs']));
-
     try {
-        console.log('Starting bot with intents:', client.options.intents);
+        // Force load configs before starting bot
+        userConfigStore.loadConfigs();
+        
         await client.login(process.env.DISCORD_TOKEN);
         console.log('Bot logged in successfully');
         
