@@ -20,12 +20,24 @@ console.log("Environment variables status:", {
   NODE_ENV: process.env.NODE_ENV,
 });
 
+// Add file system debug
+const fs = require("fs");
+const configPath = "/var/www/discordtriage/user-configs.json";
+
+// Debug file access
+console.log("Checking config file...");
+if (fs.existsSync(configPath)) {
+  const content = fs.readFileSync(configPath, "utf8");
+  console.log("Config file exists with content:", content);
+} else {
+  console.error("Config file not found at:", configPath);
+}
+
 // Initialize store and bot
 const { userConfigStore } = require("./dist/storage/userConfig.js");
 const { startBot } = require("./dist/bot/index.js");
 
-// Force load configs before starting bot
-console.log("Loading initial configs...");
+// Force load configs
 userConfigStore.loadConfigs();
 console.log("Initial configs loaded:", Object.keys(userConfigStore.configs));
 

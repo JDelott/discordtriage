@@ -12,24 +12,18 @@ class UserConfigStore {
     private configPath: string;
 
     private constructor() {
-        // Explicitly set the path
+        // Use absolute path and log it
         this.configPath = '/var/www/discordtriage/user-configs.json';
-        this.configs = {};
+        console.log('Initializing UserConfigStore with path:', this.configPath);
         
-        console.log('Bot UserConfigStore initializing with path:', this.configPath);
-        
-        // Check if file exists and is readable
-        if (fs.existsSync(this.configPath)) {
-            const stats = fs.statSync(this.configPath);
-            console.log('Config file exists:', {
-                size: stats.size,
-                permissions: stats.mode.toString(8)
-            });
-            this.loadConfigs();
-        } else {
-            console.error('Config file does not exist at:', this.configPath);
-            // Create empty config file
-            fs.writeFileSync(this.configPath, '{}', 'utf8');
+        // Debug file access
+        try {
+            const fileContent = fs.readFileSync(this.configPath, 'utf8');
+            console.log('Initial file content:', fileContent);
+            this.configs = JSON.parse(fileContent);
+        } catch (error) {
+            console.error('Failed to read config file:', error);
+            this.configs = {};
         }
     }
 
