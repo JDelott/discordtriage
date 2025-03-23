@@ -6,10 +6,31 @@ require("./register-aliases");
 // Set production environment
 process.env.NODE_ENV = "production";
 
-// Debug: Print environment variables
+// Validate Discord tokens
+const requiredEnvVars = {
+  DISCORD_TOKEN: process.env.DISCORD_TOKEN,
+  DISCORD_APPLICATION_ID: process.env.DISCORD_APPLICATION_ID,
+  DISCORD_PUBLIC_KEY: process.env.DISCORD_PUBLIC_KEY,
+};
+
+const missingVars = Object.entries(requiredEnvVars)
+  .filter(([key, value]) => !value)
+  .map(([key]) => key);
+
+if (missingVars.length > 0) {
+  console.error("Missing required environment variables:", missingVars);
+  process.exit(1);
+}
+
+// Debug: Print environment variables (safely)
 console.log("Environment variables:", {
-  token: process.env.DISCORD_TOKEN ? "exists" : "missing",
-  appId: process.env.DISCORD_APPLICATION_ID ? "exists" : "missing",
+  token: process.env.DISCORD_TOKEN
+    ? `${process.env.DISCORD_TOKEN.slice(0, 8)}...`
+    : "missing",
+  appId: process.env.DISCORD_APPLICATION_ID,
+  publicKey: process.env.DISCORD_PUBLIC_KEY
+    ? `${process.env.DISCORD_PUBLIC_KEY.slice(0, 8)}...`
+    : "missing",
   env: process.env.NODE_ENV,
   path: "/var/www/discordtriage/.env",
 });

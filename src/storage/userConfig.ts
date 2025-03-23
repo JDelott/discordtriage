@@ -7,7 +7,7 @@ interface UserConfig {
 }
 
 class UserConfigStore {
-    private configs: { [key: string]: UserConfig } = {};
+    public configs: { [key: string]: UserConfig } = {};
     private static instance: UserConfigStore;
     private configPath: string = '/var/www/discordtriage/user-configs.json';
 
@@ -34,19 +34,9 @@ class UserConfigStore {
     public loadConfigs() {
         try {
             console.log('Bot loading configs from:', this.configPath);
-            if (fs.existsSync(this.configPath)) {
-                const data = fs.readFileSync(this.configPath, 'utf8');
-                const newConfigs = JSON.parse(data);
-                // Only update if we got valid data
-                if (Object.keys(newConfigs).length > 0) {
-                    this.configs = newConfigs;
-                    console.log('Bot loaded configs:', Object.keys(this.configs));
-                } else {
-                    console.log('No configs found in file, keeping existing:', Object.keys(this.configs));
-                }
-            } else {
-                console.log('Config file does not exist at:', this.configPath);
-            }
+            const data = fs.readFileSync(this.configPath, 'utf8');
+            this.configs = JSON.parse(data);
+            console.log('Bot loaded configs:', Object.keys(this.configs));
         } catch (error) {
             console.error('Bot error loading configs:', error);
             // Don't clear existing configs on error
@@ -55,8 +45,11 @@ class UserConfigStore {
     }
 
     getConfig(userId: string): UserConfig | null {
-        console.log('Getting config for userId:', userId, 'Available:', Object.keys(this.configs));
-        return this.configs[userId] || null;
+        console.log('Getting config for userId:', userId);
+        console.log('Available configs:', Object.keys(this.configs));
+        const config = this.configs[userId];
+        console.log('Found config:', config ? 'yes' : 'no');
+        return config || null;
     }
 
     setConfig(userId: string, config: UserConfig) {
