@@ -2,6 +2,7 @@ import { config } from 'dotenv';
 import { Client, GatewayIntentBits } from 'discord.js';
 import path from 'path';
 import { handleCommand, registerCommands } from './commands';
+import { userConfigStore } from '../storage/userConfig';
 
 // Load environment variables from the correct path
 const envPath = path.resolve(process.cwd(), '.env');
@@ -24,23 +25,31 @@ if (missingVars.length > 0) {
 }
 
 // Export the client so it can be used in other files
-export const client: Client = new Client({
+export const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
+        GatewayIntentBits.MessageContent,
     ]
 });
 
 // Export the startBot function for the API route
-export const startBot = async (): Promise<boolean> => {
+export async function startBot(): Promise<boolean> {
+    // Force load configs before starting bot
+    userConfigStore.loadConfigs();
+    console.log('Bot starting with configs:', Object.keys(userConfigStore['configs']));
+
     try {
         client.on('ready', async () => {
-            console.log(`Bot is online as ${client.user?.tag}`);
-            await registerCommands(client).catch(console.error);
+            console.log(`Bot is ready as ${client.user?.tag}!`);
+            await registerCommands();
         });
 
-        client.on('interactionCreate', handleCommand);
+        client.on('interactionCreate', async (interaction) => {
+            // Force reload configs before each interaction
+            userConfigStore.loadConfigs();
+            await handleCommand(interaction);
+        });
 
         client.on('error', (error) => {
             console.error('Discord client error:', error);
@@ -58,7 +67,7 @@ export const startBot = async (): Promise<boolean> => {
         console.error('Failed to initialize bot:', error);
         return false;
     }
-};
+}
 
 // Reconnection logic
 const reconnect = () => {

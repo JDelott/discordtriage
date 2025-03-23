@@ -2,10 +2,37 @@ import {
     Client, 
     ApplicationCommandType,
     Interaction,
-    MessageApplicationCommandData
+    MessageApplicationCommandData,
+    REST,
+    Routes
 } from 'discord.js';
 import { createGitHubIssue } from './github';
 import { userConfigStore } from '../storage/userConfig';
+
+// Define commands
+const commands = [
+    {
+        name: 'Create GitHub Issue',
+        type: ApplicationCommandType.Message,
+    }
+];
+
+export async function registerCommands() {
+    try {
+        console.log('Started refreshing application (/) commands.');
+
+        const rest = new REST().setToken(process.env.DISCORD_TOKEN!);
+
+        await rest.put(
+            Routes.applicationCommands(process.env.DISCORD_APPLICATION_ID!),
+            { body: commands }
+        );
+
+        console.log('Successfully reloaded application (/) commands.');
+    } catch (error) {
+        console.error('Error registering commands:', error);
+    }
+}
 
 export async function handleCommand(interaction: Interaction) {
     if (!interaction.isMessageContextMenuCommand()) return;
@@ -13,6 +40,7 @@ export async function handleCommand(interaction: Interaction) {
 
     try {
         const userId = interaction.user.id;
+        console.log('Handling command for user:', userId);
         
         // Force reload configs before getting the latest
         userConfigStore.loadConfigs();
@@ -74,21 +102,5 @@ export async function handleCommand(interaction: Interaction) {
                 ephemeral: true
             });
         }
-    }
-}
-
-export async function registerCommands(client: Client) {
-    if (!client.application) return;
-
-    try {
-        const command: MessageApplicationCommandData = {
-            name: 'Create GitHub Issue',
-            type: ApplicationCommandType.Message
-        };
-
-        await client.application.commands.create(command);
-        console.log('Command registered successfully');
-    } catch (error) {
-        console.error('Error registering commands:', error);
     }
 }
