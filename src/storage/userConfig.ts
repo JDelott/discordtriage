@@ -7,11 +7,12 @@ interface UserConfig {
 }
 
 class UserConfigStore {
-    private configs: { [key: string]: UserConfig } = {};
+    public configs: { [key: string]: UserConfig };
     private static instance: UserConfigStore;
     private configPath: string = '/var/www/discordtriage/user-configs.json';
 
     private constructor() {
+        this.configs = {};
         console.log('Bot UserConfigStore initializing...');
         this.loadConfigs();
     }
@@ -25,59 +26,49 @@ class UserConfigStore {
 
     public loadConfigs() {
         try {
-            if (!fs.existsSync(this.configPath)) {
-                console.log('Creating new config file');
-                fs.writeFileSync(this.configPath, '{}', 'utf8');
-            }
-            
             const data = fs.readFileSync(this.configPath, 'utf8');
             console.log('Raw config data:', data);
             
-            this.configs = JSON.parse(data);
-            console.log('Loaded configs for users:', Object.keys(this.configs));
+            const parsed = JSON.parse(data);
+            this.configs = parsed;
+            
+            console.log('Loaded configs:', {
+                userIds: Object.keys(this.configs),
+                configData: this.configs
+            });
         } catch (error) {
             console.error('Error loading configs:', error);
-            this.configs = {};
         }
     }
 
     getConfig(userId: string): UserConfig | null {
-        // Always reload configs before getting
-        this.loadConfigs();
-        
-        console.log(`Getting config for user ${userId}`);
-        console.log('Available configs:', this.configs);
+        // Debug logging
+        console.log('Getting config for userId:', userId);
+        console.log('Current configs:', this.configs);
+        console.log('Config keys:', Object.keys(this.configs));
         
         const config = this.configs[userId];
-        if (!config) {
-            console.log(`No config found for user ${userId}`);
-            return null;
-        }
+        console.log('Found config:', config);
         
-        console.log(`Found config for user ${userId}:`, {
-            hasToken: !!config.githubToken,
-            repo: config.githubRepo
-        });
-        
-        return config;
+        return config || null;
     }
 
-    setConfig(userId: string, config: UserConfig) {
-        console.log(`Setting config for user ${userId}:`, {
-            hasToken: !!config.githubToken,
-            repo: config.githubRepo
-        });
+    setConfig(userId: string, updates: Partial<UserConfig>) {
+        const current = this.configs[userId] || { githubToken: '', githubRepo: '' };
         
-        this.configs[userId] = config;
+        this.configs[userId] = {
+            githubToken: updates.githubToken ?? current.githubToken,
+            githubRepo: updates.githubRepo ?? current.githubRepo
+        };
+        
+        console.log('Updated config for:', userId, 'New config:', this.configs[userId]);
         this.saveConfigs();
     }
 
     private saveConfigs() {
         try {
-            const data = JSON.stringify(this.configs, null, 2);
-            fs.writeFileSync(this.configPath, data, 'utf8');
-            console.log('Configs saved successfully');
-            console.log('Available configs after save:', Object.keys(this.configs));
+            fs.writeFileSync(this.configPath, JSON.stringify(this.configs, null, 2));
+            console.log('Saved configs:', this.configs);
         } catch (error) {
             console.error('Error saving configs:', error);
         }
