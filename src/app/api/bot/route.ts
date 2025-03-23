@@ -1,34 +1,38 @@
 import { NextResponse } from 'next/server';
-import { startBot, client } from '../../../bot';
-import { Client } from 'discord.js';
+import { Client, GatewayIntentBits } from 'discord.js';
+import { registerCommands } from '../../../bot/commands';
 
-// Track bot status globally using Node's global object
-declare global {
-    var botStarted: boolean;
-}
+// Single bot instance
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildPresences
+    ]
+});
 
-if (typeof global.botStarted === 'undefined') {
-    global.botStarted = false;
-}
+let isInitialized = false;
 
 export async function GET() {
+    if (isInitialized) {
+        return NextResponse.json({ status: 'Bot already running' });
+    }
+
     try {
-        // Check if bot is already online
-        if ((client as Client).isReady()) {
-            return NextResponse.json({ status: 'online' });
-        }
-
-        // Start bot if not already started
-        if (!global.botStarted) {
-            const success = await startBot();
-            global.botStarted = success;
-        }
-
-        return NextResponse.json({
-            status: (client as Client).isReady() ? 'online' : 'offline'
+        await client.login(process.env.DISCORD_TOKEN);
+        console.log('Bot logged in successfully');
+        
+        client.on('ready', async () => {
+            console.log(`Logged in as ${client.user?.tag}`);
+            await registerCommands();
+            isInitialized = true;
         });
+        
+        return NextResponse.json({ status: 'Bot started successfully' });
     } catch (error) {
-        console.error('Error checking bot status:', error);
-        return NextResponse.json({ status: 'error' }, { status: 500 });
+        console.error('Failed to start bot:', error);
+        return NextResponse.json({ error: 'Failed to start bot' }, { status: 500 });
     }
 }
