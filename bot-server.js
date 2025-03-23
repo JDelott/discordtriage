@@ -1,42 +1,34 @@
 require("dotenv").config({
   path: "/var/www/discordtriage/.env",
 });
-require("./register-aliases");
 
-// Set production environment
-process.env.NODE_ENV = "production";
+const { Client, GatewayIntentBits } = require("discord.js");
 
-// Validate Discord token
-if (!process.env.DISCORD_TOKEN) {
-  console.error("CRITICAL ERROR: No Discord token found in environment");
-  process.exit(1);
-}
-
-// Print the full token for verification (we'll remove this after debugging)
-console.log("Full Discord Token:", process.env.DISCORD_TOKEN);
-
-// Read the .env file directly to verify
-const fs = require("fs");
-const envFile = fs.readFileSync("/var/www/discordtriage/.env", "utf8");
-console.log("Raw .env file contents:", envFile);
-
-// Initialize store and bot
-const { userConfigStore } = require("./dist/storage/userConfig.js");
-const { startBot } = require("./dist/bot/index.js");
-
-// Start the bot
-startBot().catch((error) => {
-  console.error("Failed to start bot:", error);
-  process.exit(1);
+// Create a single client instance
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
 });
 
-// Handle process termination
-process.on("SIGINT", () => {
-  console.log("Bot shutting down...");
-  process.exit(0);
+// Simple error handling
+client.on("error", console.error);
+
+// Simple ready handler
+client.on("ready", () => {
+  console.log(`Logged in as ${client.user.tag}`);
 });
 
-process.on("SIGTERM", () => {
-  console.log("Bot shutting down...");
-  process.exit(0);
+// Simple command handler
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isMessageContextMenuCommand()) return;
+  if (interaction.commandName !== "Create GitHub Issue") return;
+
+  await interaction.reply({ content: "Creating issue...", ephemeral: true });
+  // ... rest of your command logic
 });
+
+// Login
+client.login(process.env.DISCORD_TOKEN);
