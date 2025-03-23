@@ -25,7 +25,7 @@ if (missingVars.length > 0) {
     process.exit(1);
 }
 
-// Export the client instance
+// Create a single client instance
 export const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -36,8 +36,15 @@ export const client = new Client({
     ]
 });
 
+let isInitialized = false;
+
 // Export the startBot function for the API route
 export async function startBot(): Promise<boolean> {
+    if (isInitialized) {
+        console.log('Bot already initialized');
+        return true;
+    }
+
     // Debug: Check file access
     try {
         const configPath = '/var/www/discordtriage/user-configs.json';
@@ -92,8 +99,9 @@ export async function startBot(): Promise<boolean> {
         await client.login(process.env.DISCORD_TOKEN);
         console.log('Bot logged in successfully');
         
-        client.on('ready', () => {
+        client.on('ready', async () => {
             console.log(`Logged in as ${client.user?.tag}`);
+            await registerCommands();
         });
         
         client.on('error', (error) => {
@@ -111,7 +119,7 @@ export async function startBot(): Promise<boolean> {
             reconnect();
         });
 
-        await registerCommands();
+        isInitialized = true;
         return true;
     } catch (error) {
         console.error('Failed to start bot:', error);
@@ -135,13 +143,13 @@ const reconnect = () => {
 // Handle process termination
 process.on('SIGINT', () => {
     console.log('Received SIGINT. Cleaning up...');
-    client.destroy();
+    if (client) client.destroy();
     process.exit(0);
 });
 
 process.on('SIGTERM', () => {
     console.log('Received SIGTERM. Cleaning up...');
-    client.destroy();
+    if (client) client.destroy();
     process.exit(0);
 });
 
