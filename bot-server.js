@@ -2,7 +2,7 @@ require("dotenv").config({
   path: "/var/www/discordtriage/.env",
 });
 
-const { Client, GatewayIntentBits } = require("discord.js");
+const { Client, GatewayIntentBits } = require("./node_modules/discord.js");
 
 // Create a single client instance
 const client = new Client({
@@ -26,8 +26,24 @@ client.on("interactionCreate", async (interaction) => {
   if (!interaction.isMessageContextMenuCommand()) return;
   if (interaction.commandName !== "Create GitHub Issue") return;
 
-  await interaction.reply({ content: "Creating issue...", ephemeral: true });
-  // ... rest of your command logic
+  try {
+    await interaction.reply({ content: "Creating issue...", ephemeral: true });
+
+    // Get the message content
+    const message = interaction.targetMessage;
+    console.log("Message content:", message.content);
+
+    await interaction.editReply({
+      content: "Issue created! (test response)",
+      ephemeral: true,
+    });
+  } catch (error) {
+    console.error("Command error:", error);
+    await interaction.editReply({
+      content: "Failed to create issue",
+      ephemeral: true,
+    });
+  }
 });
 
 // Login
