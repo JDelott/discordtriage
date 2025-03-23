@@ -25,12 +25,14 @@ if (missingVars.length > 0) {
     process.exit(1);
 }
 
-// Export the client so it can be used in other files
-export const client = new Client({
+// Create client with explicit intents
+const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildPresences
     ]
 });
 
@@ -86,19 +88,22 @@ export async function startBot(): Promise<boolean> {
     console.log('Bot starting with configs:', Object.keys(userConfigStore['configs']));
 
     try {
-        client.on('ready', async () => {
-            console.log(`Bot is ready as ${client.user?.tag}!`);
-            await registerCommands();
+        console.log('Starting bot with intents:', client.options.intents);
+        await client.login(process.env.DISCORD_TOKEN);
+        console.log('Bot logged in successfully');
+        
+        client.on('ready', () => {
+            console.log(`Logged in as ${client.user?.tag}`);
         });
-
+        
+        client.on('error', (error) => {
+            console.error('Discord client error:', error);
+        });
+        
         client.on('interactionCreate', async (interaction) => {
             // Force reload configs before each interaction
             userConfigStore.loadConfigs();
             await handleCommand(interaction);
-        });
-
-        client.on('error', (error) => {
-            console.error('Discord client error:', error);
         });
 
         client.on('disconnect', () => {
@@ -106,12 +111,11 @@ export async function startBot(): Promise<boolean> {
             reconnect();
         });
 
-        await client.login(process.env.DISCORD_TOKEN);
-        console.log('Bot logged in successfully');
+        await registerCommands();
         return true;
     } catch (error) {
-        console.error('Failed to initialize bot:', error);
-        return false;
+        console.error('Failed to start bot:', error);
+        throw error;
     }
 }
 
