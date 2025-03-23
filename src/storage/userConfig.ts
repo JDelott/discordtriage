@@ -14,7 +14,15 @@ class UserConfigStore {
     private constructor() {
         this.configs = {};
         console.log('Bot UserConfigStore initializing...');
-        this.loadConfigs();
+        
+        // Ensure config file exists and is readable
+        if (!fs.existsSync(this.configPath)) {
+            console.error(`Config file not found at ${this.configPath}`);
+            fs.writeFileSync(this.configPath, '{}', 'utf8');
+        }
+        
+        // Load configs immediately
+        this.forceLoadConfigs();
     }
 
     static getInstance(): UserConfigStore {
@@ -24,51 +32,66 @@ class UserConfigStore {
         return UserConfigStore.instance;
     }
 
-    public loadConfigs() {
+    private forceLoadConfigs() {
         try {
+            // Read file synchronously
             const data = fs.readFileSync(this.configPath, 'utf8');
             console.log('Raw config data:', data);
             
+            // Parse JSON
             const parsed = JSON.parse(data);
-            this.configs = parsed;
             
-            console.log('Loaded configs:', {
-                userIds: Object.keys(this.configs),
-                configData: this.configs
-            });
+            // Validate structure
+            if (typeof parsed === 'object' && parsed !== null) {
+                this.configs = parsed;
+                console.log('Loaded configs:', {
+                    userIds: Object.keys(this.configs),
+                    configCount: Object.keys(this.configs).length
+                });
+            } else {
+                throw new Error('Invalid config structure');
+            }
         } catch (error) {
-            console.error('Error loading configs:', error);
+            console.error('Error in forceLoadConfigs:', error);
+            // Don't clear existing configs on error
+            if (Object.keys(this.configs).length === 0) {
+                this.configs = {};
+            }
         }
     }
 
+    public loadConfigs() {
+        this.forceLoadConfigs();
+    }
+
     getConfig(userId: string): UserConfig | null {
-        // Debug logging
+        // Always force reload before getting config
+        this.forceLoadConfigs();
+        
         console.log('Getting config for userId:', userId);
-        console.log('Current configs:', this.configs);
-        console.log('Config keys:', Object.keys(this.configs));
+        console.log('Available configs:', Object.keys(this.configs));
         
         const config = this.configs[userId];
-        console.log('Found config:', config);
+        console.log('Found config:', config ? 'yes' : 'no');
         
         return config || null;
     }
 
-    setConfig(userId: string, updates: Partial<UserConfig>) {
-        const current = this.configs[userId] || { githubToken: '', githubRepo: '' };
+    setConfig(userId: string, config: UserConfig) {
+        // Always force reload before setting
+        this.forceLoadConfigs();
         
-        this.configs[userId] = {
-            githubToken: updates.githubToken ?? current.githubToken,
-            githubRepo: updates.githubRepo ?? current.githubRepo
-        };
-        
-        console.log('Updated config for:', userId, 'New config:', this.configs[userId]);
+        console.log('Setting config for userId:', userId);
+        this.configs[userId] = config;
         this.saveConfigs();
     }
 
     private saveConfigs() {
         try {
-            fs.writeFileSync(this.configPath, JSON.stringify(this.configs, null, 2));
-            console.log('Saved configs:', this.configs);
+            const data = JSON.stringify(this.configs, null, 2);
+            fs.writeFileSync(this.configPath, data, 'utf8');
+            console.log('Configs saved successfully');
+            console.log('Available configs after save:', Object.keys(this.configs));
         } catch (error) {
             console.error('Error saving configs:', error);
         }
