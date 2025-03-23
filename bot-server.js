@@ -6,19 +6,19 @@ require("./register-aliases");
 // Set production environment
 process.env.NODE_ENV = "production";
 
-// Validate Discord token
-if (!process.env.DISCORD_TOKEN) {
-  console.error("CRITICAL ERROR: No Discord token found in environment");
-  process.exit(1);
-}
-
-// Print the full token for verification (we'll remove this after debugging)
-console.log("Full Discord Token:", process.env.DISCORD_TOKEN);
-
-// Read the .env file directly to verify
-const fs = require("fs");
-const envFile = fs.readFileSync("/var/www/discordtriage/.env", "utf8");
-console.log("Raw .env file contents:", envFile);
+// Safely log environment status
+console.log("Environment variables status:", {
+  DISCORD_TOKEN: process.env.DISCORD_TOKEN ? "present" : "missing",
+  DISCORD_APPLICATION_ID: process.env.DISCORD_APPLICATION_ID
+    ? "present"
+    : "missing",
+  DISCORD_PUBLIC_KEY: process.env.DISCORD_PUBLIC_KEY ? "present" : "missing",
+  GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID ? "present" : "missing",
+  GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET
+    ? "present"
+    : "missing",
+  NODE_ENV: process.env.NODE_ENV,
+});
 
 // Initialize store and bot
 const { userConfigStore } = require("./dist/storage/userConfig.js");
