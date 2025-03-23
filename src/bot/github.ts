@@ -8,10 +8,19 @@ export async function createGitHubIssue(token: string, owner: string, repo: stri
     try {
         const octokit = new Octokit({ auth: token });
         
-        // Test the token first
-        await octokit.users.getAuthenticated();
-        console.log('GitHub token is valid');
+        // Test the token first with a simple API call
+        console.log('Validating GitHub token...');
+        const { data: user } = await octokit.users.getAuthenticated();
+        console.log('GitHub token is valid for user:', user.login);
         
+        // Now try to access the repository
+        console.log('Checking repository access...');
+        await octokit.repos.get({
+            owner,
+            repo
+        });
+        
+        // If we got here, we have access to create issues
         const response = await octokit.issues.create({
             owner,
             repo,
@@ -29,12 +38,13 @@ export async function createGitHubIssue(token: string, owner: string, repo: stri
             repo
         });
         
-        // If token is invalid, force a re-auth
         if (error.status === 401) {
-            console.log('Token is invalid, forcing re-auth');
-            throw new Error('GitHub token is invalid');
+            throw new Error('GitHub token has expired - please re-authenticate');
         }
-        throw error;
+        if (error.status === 404) {
+            throw new Error(`Cannot access repository ${owner}/${repo} - please check repository permissions`);
+        }
+        throw new Error(`GitHub API error: ${error.message}`);
     }
 }
 
