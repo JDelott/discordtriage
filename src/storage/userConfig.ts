@@ -9,20 +9,26 @@ interface UserConfig {
 class UserConfigStore {
     public configs: { [key: string]: UserConfig };
     private static instance: UserConfigStore;
-    private configPath: string = '/var/www/discordtriage/user-configs.json';
+    private configPath: string;
 
     private constructor() {
+        // Use absolute path
+        this.configPath = '/var/www/discordtriage/user-configs.json';
         this.configs = {};
-        console.log('Bot UserConfigStore initializing...');
         
-        // Ensure config file exists and is readable
-        if (!fs.existsSync(this.configPath)) {
-            console.error(`Config file not found at ${this.configPath}`);
-            fs.writeFileSync(this.configPath, '{}', 'utf8');
+        console.log('Bot UserConfigStore initializing with path:', this.configPath);
+        console.log('Current working directory:', process.cwd());
+        
+        // Check if file exists
+        if (fs.existsSync(this.configPath)) {
+            console.log('Config file exists');
+            const stats = fs.statSync(this.configPath);
+            console.log('File permissions:', stats.mode.toString(8));
+        } else {
+            console.log('Config file does not exist!');
         }
         
-        // Load configs immediately
-        this.forceLoadConfigs();
+        this.loadConfigs();
     }
 
     static getInstance(): UserConfigStore {
