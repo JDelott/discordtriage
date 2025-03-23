@@ -25,8 +25,8 @@ if (missingVars.length > 0) {
     process.exit(1);
 }
 
-// Create client with explicit intents
-const client = new Client({
+// Export the client instance
+export const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
