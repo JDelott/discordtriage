@@ -23,27 +23,19 @@ class UserConfigStore {
         }
         
         this.configs = {};
-        this.loadConfigs();
-    }
-
-    static getInstance(): UserConfigStore {
-        if (!UserConfigStore.instance) {
-            UserConfigStore.instance = new UserConfigStore();
-        }
-        return UserConfigStore.instance;
+        this.loadConfigs(); // Initial load
     }
 
     public loadConfigs() {
         try {
+            console.log('Loading configs from:', this.configPath);
             if (fs.existsSync(this.configPath)) {
-                const parsed = JSON.parse(fs.readFileSync(this.configPath, 'utf8'));
-                this.configs = parsed;
-                // Only log user IDs, never tokens
-                console.log('Config loaded for users:', Object.keys(this.configs));
+                const data = fs.readFileSync(this.configPath, 'utf8');
+                this.configs = JSON.parse(data);
+                console.log('Loaded configs for users:', Object.keys(this.configs));
             } else {
-                console.log('No config file found, creating empty one');
+                console.log('No config file exists yet, starting fresh');
                 this.configs = {};
-                this.saveConfigs();
             }
         } catch (error) {
             console.error('Error loading configs:', error);
@@ -51,28 +43,42 @@ class UserConfigStore {
         }
     }
 
-    getConfig(userId: string): UserConfig | null {
+    public getConfig(discordId: string): UserConfig | null {
+        // Force reload configs before each get
         this.loadConfigs();
-        const config = this.configs[userId];
-        // Safe logging
-        console.log('Getting config for user:', userId, 'exists:', !!config);
-        return config || null;
+        console.log('Getting config for user:', discordId);
+        console.log('Available configs:', Object.keys(this.configs));
+        return this.configs[discordId] || null;
     }
 
-    setConfig(userId: string, config: UserConfig) {
-        // Safe logging
-        console.log('Setting config for user:', userId);
-        this.configs[userId] = config;
+    public setConfig(discordId: string, updates: Partial<UserConfig>) {
+        // Force reload before updating
+        this.loadConfigs();
+        
+        const current = this.configs[discordId] || { githubToken: '', githubRepo: '' };
+        this.configs[discordId] = {
+            githubToken: updates.githubToken ?? current.githubToken,
+            githubRepo: updates.githubRepo ?? current.githubRepo
+        };
+        
         this.saveConfigs();
+        console.log('Updated config for:', discordId, 'New repo:', this.configs[discordId].githubRepo);
     }
 
     private saveConfigs() {
         try {
             fs.writeFileSync(this.configPath, JSON.stringify(this.configs, null, 2));
-            console.log('Configs saved for users:', Object.keys(this.configs));
+            console.log('Saved configs successfully');
         } catch (error) {
             console.error('Error saving configs:', error);
         }
+    }
+
+    public static getInstance(): UserConfigStore {
+        if (!UserConfigStore.instance) {
+            UserConfigStore.instance = new UserConfigStore();
+        }
+        return UserConfigStore.instance;
     }
 }
 

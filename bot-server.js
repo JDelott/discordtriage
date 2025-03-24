@@ -64,29 +64,18 @@ client.on("interactionCreate", async (interaction) => {
   try {
     await interaction.reply({ content: "Creating issue...", ephemeral: true });
 
-    // Get the message content and EXPLICITLY use the interaction user's ID
+    // Get the message content and use the interaction user's ID
     const message = interaction.targetMessage;
-    const userId = interaction.member.user.id; // This should get the actual Discord user ID
+    const userId = interaction.user.id; // Use the ID of the person who clicked the command
 
-    console.log("Command triggered by:", {
-      userId,
-      username: interaction.member.user.username,
-      messageAuthor: message.author.id,
-    });
+    console.log("Command triggered by user:", userId);
+    console.log("Message content:", message.content);
 
     // Read config file directly
     const fs = require("fs");
     const configPath = "/var/www/discordtriage/user-configs.json";
     const configs = JSON.parse(fs.readFileSync(configPath, "utf8"));
-
-    console.log("Available user configs:", Object.keys(configs));
     const userConfig = configs[userId];
-    console.log(
-      "Selected config for user:",
-      userId,
-      "repo:",
-      userConfig?.githubRepo
-    );
 
     if (!userConfig?.githubToken || !userConfig?.githubRepo) {
       await interaction.editReply({
@@ -125,6 +114,3 @@ client.on("interactionCreate", async (interaction) => {
     });
   }
 });
-
-// Login
-client.login(process.env.DISCORD_TOKEN);
