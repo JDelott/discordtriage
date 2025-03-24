@@ -7,9 +7,9 @@ import {
     Routes,
     InteractionReplyOptions
 } from 'discord.js';
-import { createGitHubIssue } from './github';
-import { userConfigStore } from "../storage/userConfig";
-import { processIssueContent } from './utils/anthropicProcessor';
+import { createGitHubIssue } from './github.js';
+import { userConfigStore } from '../storage/userConfig.js';
+import { processIssueContent } from './utils/anthropicProcessor.js';
 
 // Define commands
 const commands = [

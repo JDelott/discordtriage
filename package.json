@@ -7,7 +7,7 @@
     "build": "next build",
     "build:bot": "tsc --project tsconfig.bot.json",
     "start": "next start",
-    "bot": "ts-node bot-server.js",
+    "bot": "ts-node --project tsconfig.bot.json bot-server.js",
     "lint": "next lint"
   },
   "dependencies": {

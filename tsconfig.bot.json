@@ -1,22 +1,17 @@
 {
   "compilerOptions": {
-    "target": "es2017",
-    "module": "commonjs",
-    "outDir": "./dist/bot",
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
-    "esModuleInterop": true,
+    "allowJs": true,
+    "resolveJsonModule": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    },
-    "moduleResolution": "node"
+    "forceConsistentCasingInFileNames": true
   },
-  "include": [
-    "src/bot/**/*",
-    "src/storage/**/*"
-  ],
+  "include": ["src/bot/**/*", "src/storage/**/*"],
   "exclude": ["node_modules"]
 }
