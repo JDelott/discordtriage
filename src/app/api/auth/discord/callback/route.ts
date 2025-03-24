@@ -13,6 +13,12 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'No code provided' }, { status: 400 });
         }
 
+        // Use the exact same redirect URI as in the initial request
+        const redirectUri = `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/discord/callback`;
+        
+        console.log('Callback received with code:', code);
+        console.log('Using redirect URI:', redirectUri);
+
         // Exchange code for token
         const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
             method: 'POST',
@@ -22,7 +28,7 @@ export async function GET(request: Request) {
                 client_secret: process.env.DISCORD_CLIENT_SECRET!,
                 code,
                 grant_type: 'authorization_code',
-                redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/discord/callback`
+                redirect_uri: redirectUri  // Must match exactly
             })
         });
 
