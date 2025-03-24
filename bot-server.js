@@ -66,9 +66,9 @@ client.on("interactionCreate", async (interaction) => {
 
     // Get the message content and use the interaction user's ID
     const message = interaction.targetMessage;
-    const userId = interaction.user.id; // Use the ID of the person who clicked the command
+    const userId = message.author.id; // Use the message author's ID instead
 
-    console.log("Command triggered by user:", userId);
+    console.log("Creating issue for message author:", userId);
     console.log("Message content:", message.content);
 
     // Read config file directly
