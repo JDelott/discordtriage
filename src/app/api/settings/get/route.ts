@@ -2,39 +2,35 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { userConfigStore } from '@/storage/userConfig';
 
-export async function GET() {
-    const cookieStore = cookies();
-    const githubToken = cookieStore.get('github_token')?.value;
-    const discordId = cookieStore.get('discord_id')?.value;
-    
-    console.log('Settings Get:', { 
-        hasGithubToken: !!githubToken,
-        hasDiscordId: !!discordId,
-        environment: process.env.NODE_ENV
-    });
-
-    if (!githubToken || !discordId) {
-        return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    // Verify GitHub token
+export async function GET(request: Request) {
     try {
-        const response = await fetch('https://api.github.com/user', {
-            headers: {
-                'Authorization': `token ${githubToken}`,
-                'Accept': 'application/vnd.github.v3+json'
-            }
-        });
-        
-        if (!response.ok) {
-            return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+        const { searchParams } = new URL(request.url);
+        const guildId = searchParams.get('guild');
+        const discordId = cookies().get('discord_id')?.value;
+
+        if (!discordId) {
+            return NextResponse.json(
+                { error: 'Not authenticated' },
+                { status: 401 }
+            );
         }
 
-        const config = userConfigStore.getConfig(discordId);
+        if (!guildId) {
+            return NextResponse.json(
+                { error: 'No guild ID provided' },
+                { status: 400 }
+            );
+        }
+
+        const installation = userConfigStore.getInstallation(discordId, guildId);
         return NextResponse.json({
-            repo: config?.githubRepo || ''
+            repo: installation?.githubRepo || ''
         });
     } catch (error) {
-        return NextResponse.json({ error: 'Authentication error' }, { status: 401 });
+        console.error('Error getting settings:', error);
+        return NextResponse.json(
+            { error: 'Failed to get settings' },
+            { status: 500 }
+        );
     }
 }
