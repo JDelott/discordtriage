@@ -64,30 +64,28 @@ client.on("interactionCreate", async (interaction) => {
   try {
     await interaction.reply({ content: "Creating issue...", ephemeral: true });
 
-    // Get the message content and log all relevant IDs
     const message = interaction.targetMessage;
-    console.log("Debug IDs:", {
-      "interaction.user.id": interaction.user.id,
-      "message.author.id": message.author.id,
-      "interaction.member.id": interaction.member?.user.id,
-      message: message,
-      interaction: {
-        type: interaction.type,
-        user: interaction.user,
-        member: interaction.member,
-      },
-    });
-
-    // For now, use interaction.user.id
     const userId = interaction.user.id;
 
-    // Read config file directly
+    // Force fresh read of config file each time
     const fs = require("fs");
     const configPath = "/var/www/discordtriage/user-configs.json";
-    const configs = JSON.parse(fs.readFileSync(configPath, "utf8"));
 
-    console.log("Available configs:", configs);
+    // Clear require cache to force fresh read
+    delete require.cache[require.resolve(configPath)];
+
+    console.log("Reading fresh config...");
+    const configContent = fs.readFileSync(configPath, "utf8");
+    const configs = JSON.parse(configContent);
+    console.log("Fresh configs loaded for users:", Object.keys(configs));
+
     const userConfig = configs[userId];
+    console.log(
+      "Using config for user:",
+      userId,
+      "repo:",
+      userConfig?.githubRepo
+    );
 
     if (!userConfig?.githubToken || !userConfig?.githubRepo) {
       await interaction.editReply({
