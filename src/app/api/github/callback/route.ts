@@ -8,11 +8,27 @@ export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const code = searchParams.get('code');
-        const discordId = cookies().get('discord_id')?.value;
-        const guildId = searchParams.get('guild') || 'default';
+        const state = searchParams.get('state');
 
-        if (!code) {
-            return NextResponse.json({ error: 'No code provided' }, { status: 400 });
+        if (!code || !state) {
+            console.error('Missing code or state');
+            return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+        }
+
+        // Parse state data
+        let stateData;
+        try {
+            stateData = JSON.parse(state);
+        } catch (e) {
+            console.error('Invalid state data:', state);
+            return NextResponse.json({ error: 'Invalid state data' }, { status: 400 });
+        }
+
+        const { discordId, guildId } = stateData;
+
+        if (!discordId) {
+            console.error('No Discord ID in state:', state);
+            return NextResponse.json({ error: 'No Discord ID found' }, { status: 400 });
         }
 
         // Exchange code for token
@@ -35,36 +51,28 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'Invalid code' }, { status: 400 });
         }
 
-        // Get GitHub user info
-        const userResponse = await fetch('https://api.github.com/user', {
-            headers: {
-                Authorization: `Bearer ${tokenData.access_token}`,
-                Accept: 'application/json',
-            },
+        // Store the token with the Discord ID and guild ID
+        userConfigStore.setInstallation(discordId, guildId || 'default', {
+            githubToken: tokenData.access_token,
+            githubRepo: '',
+            installedAt: new Date()
         });
 
-        const githubUser = await userResponse.json();
+        // Set cookie and redirect
+        cookies().set('github_token', tokenData.access_token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/',
+        });
 
-        if (discordId) {
-            // Store the token with the Discord ID
-            userConfigStore.setInstallation(discordId, guildId, {
-                githubToken: tokenData.access_token,
-                githubRepo: '',
-                installedAt: new Date()
-            });
-
-            // Set cookie and redirect
-            cookies().set('github_token', tokenData.access_token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax',
-                path: '/',
-            });
-
-            return NextResponse.redirect(new URL('/settings?success=true', request.url));
+        const redirectUrl = new URL('/settings', request.url);
+        if (guildId) {
+            redirectUrl.searchParams.set('guild', guildId);
         }
+        redirectUrl.searchParams.set('success', 'true');
 
-        return NextResponse.json({ error: 'No Discord ID found' }, { status: 400 });
+        return NextResponse.redirect(redirectUrl);
     } catch (error) {
         console.error('GitHub callback error:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
