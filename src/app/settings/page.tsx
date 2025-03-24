@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-export default function SettingsPage() {
+function SettingsContent() {
     const [repo, setRepo] = useState('');
     const [status, setStatus] = useState('');
     const searchParams = useSearchParams();
@@ -65,5 +65,14 @@ export default function SettingsPage() {
                 {status && <p className="mt-4">{status}</p>}
             </form>
         </div>
+    );
+}
+
+// Wrap in Suspense boundary
+export default function SettingsPage() {
+    return (
+        <Suspense fallback={<div>Loading settings...</div>}>
+            <SettingsContent />
+        </Suspense>
     );
 }
