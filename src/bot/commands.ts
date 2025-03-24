@@ -65,8 +65,8 @@ export async function handleCommand(interaction: Interaction) {
         console.log('Installation config:', installation);
 
         if (!installation?.githubToken || !installation?.githubRepo) {
-            // Use the Discord OAuth flow instead of direct GitHub auth
-            const authUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/discord?guild=${guildId}`;
+            const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://discordtriage.com';
+            const authUrl = `${baseUrl}/api/auth/discord?guild=${guildId}`;
             
             await interaction.reply({
                 content: `Please authenticate and configure GitHub for this server: ${authUrl}`,
