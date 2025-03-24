@@ -8,7 +8,7 @@ import {
     InteractionReplyOptions
 } from 'discord.js';
 import { createGitHubIssue } from './github';
-import { userConfigStore } from '../storage/userConfig';
+import { userConfigStore } from "../storage/userConfig";
 import { processIssueContent } from './utils/anthropicProcessor';
 
 // Define commands
