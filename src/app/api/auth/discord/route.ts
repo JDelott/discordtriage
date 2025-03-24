@@ -7,20 +7,20 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const guildId = searchParams.get('guild');
 
-    // Just need Send Messages permission (2048)
-    const permissions = '2048';
+    // Explicitly encode the redirect URI
+    const redirectUri = encodeURIComponent(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/discord/callback`);
 
     // Build Discord OAuth URL
-    const params = new URLSearchParams({
-        client_id: BOT_CONFIG.applicationId!,
-        permissions: permissions,
-        scope: 'bot applications.commands',
-        redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/discord/callback`,
-        response_type: 'code',
-        state: guildId || ''
-    });
+    const params = new URLSearchParams();
+    params.append('client_id', BOT_CONFIG.applicationId!);
+    params.append('permissions', '2048');  // Send Messages
+    params.append('scope', 'bot applications.commands');
+    params.append('redirect_uri', `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/discord/callback`);
+    params.append('response_type', 'code');
+    params.append('state', guildId || '');
 
     console.log('Starting Discord auth flow with params:', Object.fromEntries(params));
+    console.log('Redirect URI:', `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/discord/callback`);
 
     return NextResponse.redirect(
         new URL(`https://discord.com/oauth2/authorize?${params.toString()}`)
