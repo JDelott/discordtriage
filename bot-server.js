@@ -64,24 +64,25 @@ client.on("interactionCreate", async (interaction) => {
   try {
     await interaction.reply({ content: "Creating issue...", ephemeral: true });
 
+    // Get the message content and EXPLICITLY use the interaction user's ID
     const message = interaction.targetMessage;
-    const userId = interaction.user.id;
+    const userId = interaction.member.user.id; // This should get the actual Discord user ID
 
-    // Force fresh read of config file each time
+    console.log("Command triggered by:", {
+      userId,
+      username: interaction.member.user.username,
+      messageAuthor: message.author.id,
+    });
+
+    // Read config file directly
     const fs = require("fs");
     const configPath = "/var/www/discordtriage/user-configs.json";
+    const configs = JSON.parse(fs.readFileSync(configPath, "utf8"));
 
-    // Clear require cache to force fresh read
-    delete require.cache[require.resolve(configPath)];
-
-    console.log("Reading fresh config...");
-    const configContent = fs.readFileSync(configPath, "utf8");
-    const configs = JSON.parse(configContent);
-    console.log("Fresh configs loaded for users:", Object.keys(configs));
-
+    console.log("Available user configs:", Object.keys(configs));
     const userConfig = configs[userId];
     console.log(
-      "Using config for user:",
+      "Selected config for user:",
       userId,
       "repo:",
       userConfig?.githubRepo
