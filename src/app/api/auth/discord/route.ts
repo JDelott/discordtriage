@@ -15,7 +15,8 @@ export async function GET(request: Request) {
         'scope=bot+applications.commands',
         `redirect_uri=${encodeURIComponent(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/discord/callback`)}`,
         'response_type=code',
-        `state=${guildId || ''}`
+        `state=${guildId || ''}`,
+        'integration_type=1'
     ].join('&');
 
     const url = `${baseUrl}?${params}`;
