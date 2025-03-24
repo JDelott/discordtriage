@@ -56,7 +56,7 @@ export async function handleCommand(interaction: Interaction) {
             await interaction.reply({
                 content: 'This command can only be used in a server',
                 ephemeral: true
-            } as InteractionReplyOptions);
+            });
             return;
         }
 
@@ -71,15 +71,18 @@ export async function handleCommand(interaction: Interaction) {
             await interaction.reply({
                 content: `Please authenticate and configure GitHub for this server: ${authUrl}`,
                 ephemeral: true
-            } as InteractionReplyOptions);
+            });
             return;
         }
+
+        // Defer the reply BEFORE creating the issue
+        await interaction.deferReply({ ephemeral: true });
 
         const message = interaction.targetMessage;
         if (!message?.content) {
             await interaction.editReply({
                 content: 'No message content found'
-            } as InteractionEditReplyOptions);
+            });
             return;
         }
 
@@ -92,18 +95,29 @@ export async function handleCommand(interaction: Interaction) {
             owner,
             repo,
             processedContent.title,
-            `${processedContent.body}\n\n---\nCreated from Discord by ${interaction.user.tag}\nOriginal Message: ${message.url}`
+            processedContent.body
         );
 
         await interaction.editReply({
-            content: `✅ Issue created! View it here: ${issueUrl}`
-        } as InteractionEditReplyOptions);
+            content: `✅ GitHub issue created successfully! View it here: ${issueUrl}`
+        });
 
     } catch (error) {
         console.error('Command error:', error);
-        await interaction.editReply({
-            content: 'Failed to create issue. Please check your GitHub settings.',
-            ephemeral: true
-        } as InteractionReplyOptions);
+        // Try to send an error message if we haven't replied yet
+        try {
+            if (!interaction.replied && !interaction.deferred) {
+                await interaction.reply({
+                    content: 'An error occurred while processing your command',
+                    ephemeral: true
+                });
+            } else {
+                await interaction.editReply({
+                    content: 'An error occurred while processing your command'
+                });
+            }
+        } catch (e) {
+            console.error('Error sending error message:', e);
+        }
     }
 }
