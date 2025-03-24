@@ -2,9 +2,12 @@ require("dotenv").config({
   path: "/var/www/discordtriage/.env",
 });
 
-const { Client, GatewayIntentBits } = require("./node_modules/discord.js");
+const { Client, GatewayIntentBits } = require("discord.js");
 const { Octokit } = require("@octokit/rest");
 const { Anthropic } = require("@anthropic-ai/sdk");
+const { userConfigStore } = require("./storage/userConfig");
+const { processIssueContent } = require("./bot/utils/anthropicProcessor");
+const { createGitHubIssue } = require("./bot/github");
 
 // Create anthropic client
 const anthropic = new Anthropic({
