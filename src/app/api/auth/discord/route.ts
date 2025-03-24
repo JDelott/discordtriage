@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { BOT_CONFIG } from '../../../../bot/config';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const guildId = searchParams.get('guild');
