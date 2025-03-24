@@ -7,24 +7,19 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const guildId = searchParams.get('guild');
 
-    // Use the production URL explicitly instead of env variable
-    const redirectUri = 'https://discordtriage.com/api/auth/discord/callback';
+    // Build the URL with space-separated scopes
+    const params = new URLSearchParams({
+        client_id: BOT_CONFIG.applicationId!,
+        response_type: 'code',
+        redirect_uri: 'https://discordtriage.com/api/auth/discord/callback',
+        scope: 'bot applications.commands',  // Space-separated instead of plus
+        state: guildId || '',
+        integration_type: '1'
+    });
 
-    // Build the URL manually to ensure exact format
-    const baseUrl = 'https://discord.com/oauth2/authorize';
-    const params = [
-        `client_id=${BOT_CONFIG.applicationId}`,
-        'permissions=2048',
-        'scope=bot+applications.commands',
-        `redirect_uri=${encodeURIComponent(redirectUri)}`,
-        'response_type=code',
-        `state=${guildId || ''}`,
-        'integration_type=1'
-    ].join('&');
+    console.log('Generated URL:', `https://discord.com/oauth2/authorize?${params.toString()}`);
 
-    const url = `${baseUrl}?${params}`;
-    
-    console.log('Generated URL:', url);
-
-    return NextResponse.redirect(new URL(url));
+    return NextResponse.redirect(
+        new URL(`https://discord.com/oauth2/authorize?${params.toString()}`)
+    );
 }
