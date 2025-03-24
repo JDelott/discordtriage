@@ -80,10 +80,11 @@ client.on("interactionCreate", async (interaction) => {
     console.log("Raw config content:", configContent);
 
     const configs = JSON.parse(configContent);
-    console.log("Parsed configs:", configs);
     console.log("All user IDs in config:", Object.keys(configs));
 
+    // Make sure we're using the correct user ID
     const userConfig = configs[userId];
+    console.log("User ID:", userId);
     console.log("User specific config:", userConfig);
 
     if (!userConfig?.githubToken || !userConfig?.githubRepo) {
@@ -101,6 +102,13 @@ client.on("interactionCreate", async (interaction) => {
 
     // Create GitHub issue using user's specific config
     const [owner, repo] = userConfig.githubRepo.split("/");
+    console.log(
+      "Creating issue in repo:",
+      userConfig.githubRepo,
+      "for user:",
+      userId
+    );
+
     const octokit = new Octokit({ auth: userConfig.githubToken });
 
     const response = await octokit.issues.create({
