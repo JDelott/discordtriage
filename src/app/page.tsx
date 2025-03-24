@@ -7,7 +7,12 @@ export default function Home() {
     const [botStatus, setBotStatus] = useState('checking');
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [discordId, setDiscordId] = useState('');
-    const inviteUrl = `https://discord.com/api/oauth2/authorize?client_id=${process.env.NEXT_PUBLIC_DISCORD_APPLICATION_ID}&permissions=0&scope=bot%20applications.commands`;
+    
+    // Add guild ID to invite URL to enable auto-redirect
+    const getInviteUrl = (guildId?: string) => {
+        const baseUrl = `https://discord.com/api/oauth2/authorize?client_id=${process.env.NEXT_PUBLIC_DISCORD_APPLICATION_ID}&permissions=0&scope=bot%20applications.commands`;
+        return guildId ? `${baseUrl}&guild_id=${guildId}&disable_guild_select=true` : baseUrl;
+    };
 
     useEffect(() => {
         // Check bot status
@@ -50,7 +55,7 @@ export default function Home() {
                         </p>
                         {botStatus === 'online' ? (
                             <a
-                                href={inviteUrl}
+                                href={getInviteUrl()}
                                 className="inline-block bg-black text-white px-4 md:px-6 py-3 hover:bg-emerald-500 transition-colors"
                                 target="_blank"
                                 rel="noopener noreferrer"
