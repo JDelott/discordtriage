@@ -71,11 +71,20 @@ client.on("interactionCreate", async (interaction) => {
     const userId = interaction.user.id;
     console.log("Creating issue for user:", userId);
 
-    // Read config file directly
+    // Read config file directly with more logging
     const fs = require("fs");
     const configPath = "/var/www/discordtriage/user-configs.json";
-    const configs = JSON.parse(fs.readFileSync(configPath, "utf8"));
-    const userConfig = configs[userId]; // Use the specific user's ID
+    console.log("Reading config from:", configPath);
+
+    const configContent = fs.readFileSync(configPath, "utf8");
+    console.log("Raw config content:", configContent);
+
+    const configs = JSON.parse(configContent);
+    console.log("Parsed configs:", configs);
+    console.log("All user IDs in config:", Object.keys(configs));
+
+    const userConfig = configs[userId];
+    console.log("User specific config:", userConfig);
 
     if (!userConfig?.githubToken || !userConfig?.githubRepo) {
       await interaction.editReply({
