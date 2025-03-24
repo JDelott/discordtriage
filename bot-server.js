@@ -4,7 +4,8 @@ require("dotenv").config({
 
 const { Client, GatewayIntentBits } = require("discord.js");
 const { handleCommand, registerCommands } = require("./dist/bot/commands");
-const { Anthropic } = require("@anthropic-ai/sdk");
+const { userConfigStore } = require("./dist/storage/userConfig");
+const { processIssueContent } = require("./dist/bot/utils/anthropicProcessor");
 
 // Create Discord client
 const client = new Client({
@@ -24,7 +25,7 @@ client.on("ready", async () => {
   await registerCommands();
 });
 
-// Use the command handler from src/bot/commands.ts
+// Use the command handler from commands.ts
 client.on("interactionCreate", handleCommand);
 
 client.login(process.env.DISCORD_TOKEN);
