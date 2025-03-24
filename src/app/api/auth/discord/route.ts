@@ -12,7 +12,7 @@ export async function GET(request: Request) {
         client_id: BOT_CONFIG.applicationId!,
         redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/discord/callback`,
         response_type: 'code',
-        scope: 'identify guilds',
+        scope: 'identify guilds bot applications.commands',
         state: guildId || '',
         permissions: '0'
     });
