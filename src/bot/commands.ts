@@ -5,7 +5,9 @@ import {
     MessageApplicationCommandData,
     REST,
     Routes,
-    InteractionReplyOptions
+    InteractionReplyOptions,
+    MessagePayload,
+    InteractionEditReplyOptions
 } from 'discord.js';
 import { createGitHubIssue } from './github';
 import { userConfigStore } from '../storage/userConfig';
@@ -44,24 +46,26 @@ export async function handleCommand(interaction: Interaction) {
     if (interaction.commandName !== 'Create GitHub Issue') return;
     
     try {
+        await interaction.deferReply({ ephemeral: true } as InteractionReplyOptions);
+        
         const userId = interaction.user.id;
         const guildId = interaction.guildId;
 
         console.log('Processing command for:', { userId, guildId });
 
         if (!guildId) {
-            await interaction.reply({
-                content: 'This command can only be used in a server',
-                ephemeral: true
-            } as InteractionReplyOptions);
+            await interaction.editReply({
+                content: 'This command can only be used in a server'
+            } as InteractionEditReplyOptions);
             return;
         }
 
-        await interaction.deferReply({ ephemeral: true } as InteractionReplyOptions);
-
+        // Force reload configs before checking installation
+        userConfigStore.loadConfigs();
+        
         // Get installation config for this specific guild
         const installation = userConfigStore.getInstallation(userId, guildId);
-        console.log('Installations config:', installation);
+        console.log('Installation config:', installation);
 
         if (!installation?.githubToken || !installation?.githubRepo) {
             const settingsUrl = process.env.NODE_ENV === 'production'
@@ -69,18 +73,16 @@ export async function handleCommand(interaction: Interaction) {
                 : `http://localhost:3000/settings?guild=${guildId}`;
 
             await interaction.editReply({
-                content: `Please configure GitHub for this server: ${settingsUrl}`,
-                ephemeral: true
-            } as InteractionReplyOptions);
+                content: `Please configure GitHub for this server: ${settingsUrl}`
+            } as InteractionEditReplyOptions);
             return;
         }
 
         const message = interaction.targetMessage;
         if (!message?.content) {
             await interaction.editReply({
-                content: 'No message content found',
-                ephemeral: true
-            } as InteractionReplyOptions);
+                content: 'No message content found'
+            } as InteractionEditReplyOptions);
             return;
         }
 
@@ -97,15 +99,13 @@ export async function handleCommand(interaction: Interaction) {
         );
 
         await interaction.editReply({
-            content: `✅ Issue created! View it here: ${issueUrl}`,
-            ephemeral: true
-        } as InteractionReplyOptions);
+            content: `✅ Issue created! View it here: ${issueUrl}`
+        } as InteractionEditReplyOptions);
 
     } catch (error) {
         console.error('Command error:', error);
         await interaction.editReply({
-            content: 'Failed to create issue. Please check your GitHub settings.',
-            ephemeral: true
-        } as InteractionReplyOptions);
+            content: 'Failed to create issue. Please check your GitHub settings.'
+        } as InteractionEditReplyOptions);
     }
 }
