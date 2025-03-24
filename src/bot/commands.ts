@@ -44,6 +44,8 @@ export async function handleCommand(interaction: Interaction) {
         const userId = interaction.user.id;
         const guildId = interaction.guildId;
 
+        console.log('Processing command for:', { userId, guildId });
+
         if (!guildId) {
             await interaction.reply({
                 content: 'This command can only be used in a server',
@@ -56,7 +58,8 @@ export async function handleCommand(interaction: Interaction) {
 
         // Get installation config for this specific guild
         const installation = userConfigStore.getInstallation(userId, guildId);
-        
+        console.log('Installation config:', installation);
+
         if (!installation?.githubToken || !installation?.githubRepo) {
             const settingsUrl = process.env.NODE_ENV === 'production'
                 ? `https://discordtriage.com/settings?guild=${guildId}`
@@ -70,7 +73,16 @@ export async function handleCommand(interaction: Interaction) {
         }
 
         const message = interaction.targetMessage;
+        if (!message?.content) {
+            await interaction.editReply({
+                content: 'No message content found',
+                ephemeral: true
+            } as InteractionReplyOptions);
+            return;
+        }
+
         const processedContent = await processIssueContent(message.content);
+        console.log('Processed content:', processedContent);
 
         const [owner, repo] = installation.githubRepo.split('/');
         const issueUrl = await createGitHubIssue(
