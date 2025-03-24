@@ -99,7 +99,7 @@ export async function handleCommand(interaction: Interaction) {
         );
 
         await interaction.editReply({
-            content: `✅ GitHub issue created successfully! View it here: ${issueUrl}`
+            content: `✅ GitHub issue created successfully! View it here: ${issueUrl}\n\nTo change repository settings, visit: https://discordtriage.com/settings?guild=${guildId}`
         });
 
     } catch (error) {
