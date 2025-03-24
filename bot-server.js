@@ -64,17 +64,29 @@ client.on("interactionCreate", async (interaction) => {
   try {
     await interaction.reply({ content: "Creating issue...", ephemeral: true });
 
-    // Get the message content and use the interaction user's ID
+    // Get the message content and log all relevant IDs
     const message = interaction.targetMessage;
-    const userId = message.author.id; // Use the message author's ID instead
+    console.log("Debug IDs:", {
+      "interaction.user.id": interaction.user.id,
+      "message.author.id": message.author.id,
+      "interaction.member.id": interaction.member?.user.id,
+      message: message,
+      interaction: {
+        type: interaction.type,
+        user: interaction.user,
+        member: interaction.member,
+      },
+    });
 
-    console.log("Creating issue for message author:", userId);
-    console.log("Message content:", message.content);
+    // For now, use interaction.user.id
+    const userId = interaction.user.id;
 
     // Read config file directly
     const fs = require("fs");
     const configPath = "/var/www/discordtriage/user-configs.json";
     const configs = JSON.parse(fs.readFileSync(configPath, "utf8"));
+
+    console.log("Available configs:", configs);
     const userConfig = configs[userId];
 
     if (!userConfig?.githubToken || !userConfig?.githubRepo) {
