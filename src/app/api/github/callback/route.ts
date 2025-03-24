@@ -66,7 +66,7 @@ export async function GET(request: Request) {
             path: '/',
         });
 
-        const redirectUrl = new URL('/settings', request.url);
+        const redirectUrl = new URL('/settings', 'https://discordtriage.com');
         if (guildId) {
             redirectUrl.searchParams.set('guild', guildId);
         }

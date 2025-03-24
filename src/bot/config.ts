@@ -4,5 +4,5 @@ export const BOT_CONFIG = {
   publicKey: process.env.DISCORD_PUBLIC_KEY,
   clientId: process.env.GITHUB_CLIENT_ID,
   clientSecret: process.env.GITHUB_CLIENT_SECRET,
-  oauthCallbackUrl: process.env.OAUTH_CALLBACK_URL || 'http://localhost:3000/api/github/callback'
+  oauthCallbackUrl: 'https://discordtriage.com/api/github/callback'
 };
