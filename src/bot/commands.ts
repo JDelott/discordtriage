@@ -16,21 +16,24 @@ const commands = [
     {
         name: 'Create GitHub Issue',
         type: ApplicationCommandType.Message,
+        defaultPermission: true
     }
 ];
 
 export async function registerCommands() {
     try {
         console.log('Started refreshing application (/) commands.');
-
-        const rest = new REST().setToken(process.env.DISCORD_TOKEN!);
-
-        await rest.put(
+        
+        const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN!);
+        
+        console.log('Registering commands for app:', process.env.DISCORD_APPLICATION_ID);
+        
+        const response = await rest.put(
             Routes.applicationCommands(process.env.DISCORD_APPLICATION_ID!),
             { body: commands }
         );
-
-        console.log('Successfully reloaded application (/) commands.');
+        
+        console.log('Successfully registered commands:', response);
     } catch (error) {
         console.error('Error registering commands:', error);
     }
