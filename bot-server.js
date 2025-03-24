@@ -67,9 +67,9 @@ client.on("interactionCreate", async (interaction) => {
     // Get the message content
     const message = interaction.targetMessage;
 
-    // Use the interaction user's ID to get their specific config
-    const userId = interaction.user.id;
-    console.log("Creating issue for user:", userId);
+    // IMPORTANT: Use the message author's ID, not the bot's ID
+    const userId = message.author.id;
+    console.log("Creating issue for message author:", userId);
 
     // Read config file directly with more logging
     const fs = require("fs");
