@@ -10,12 +10,24 @@ function SettingsContent() {
     const guildId = searchParams.get('guild');
 
     useEffect(() => {
-        if (!guildId) return;
-
-        fetch(`/api/settings/get?guild=${guildId}`)
+        // Check auth status first
+        fetch('/api/auth/status')
             .then(res => res.json())
             .then(data => {
-                if (data.repo) setRepo(data.repo);
+                if (!data.authenticated) {
+                    // Start Discord auth if not authenticated
+                    window.location.href = `/api/auth/discord${guildId ? `?guild=${guildId}` : ''}`;
+                    return;
+                }
+                // Load settings if authenticated
+                if (guildId) {
+                    fetch(`/api/settings/get?guild=${guildId}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.repo) setRepo(data.repo);
+                        })
+                        .catch(console.error);
+                }
             })
             .catch(console.error);
     }, [guildId]);
