@@ -7,7 +7,7 @@
     "build": "next build",
     "build:bot": "tsc --project tsconfig.bot.json",
     "start": "next start",
-    "bot": "npm run build:bot && node bot-server.js",
+    "bot": "ts-node bot-server.js",
     "lint": "next lint"
   },
   "dependencies": {
@@ -23,7 +23,6 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "tailwindcss": "^3.4.1",
-    "ts-node": "^10.9.2",
     "zlib-sync": "^0.1.9"
   },
   "devDependencies": {
@@ -34,6 +33,7 @@
     "eslint": "^8.0.0",
     "eslint-config-next": "14.1.0",
     "node-loader": "^2.1.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.0.0"
   }
 }

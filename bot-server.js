@@ -3,9 +3,9 @@ require("dotenv").config({
 });
 
 const { Client, GatewayIntentBits } = require("discord.js");
-const { handleCommand, registerCommands } = require("./dist/bot/commands");
-const { userConfigStore } = require("./dist/storage/userConfig");
-const { processIssueContent } = require("./dist/bot/utils/anthropicProcessor");
+const { handleCommand, registerCommands } = require("./src/bot/commands");
+const { userConfigStore } = require("./src/storage/userConfig");
+const { processIssueContent } = require("./src/bot/utils/anthropicProcessor");
 
 // Create Discord client
 const client = new Client({
