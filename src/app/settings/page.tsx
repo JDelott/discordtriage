@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-export default function SettingsPage() {
+function SettingsContent() {
     const [error, setError] = useState('');
     const searchParams = useSearchParams();
     const guildId = searchParams.get('guild');
@@ -23,4 +23,13 @@ export default function SettingsPage() {
     }
 
     return <div className="p-4">Redirecting to Discord authentication...</div>;
+}
+
+// Wrap in Suspense boundary
+export default function SettingsPage() {
+    return (
+        <Suspense fallback={<div className="p-4">Loading...</div>}>
+            <SettingsContent />
+        </Suspense>
+    );
 }
