@@ -3,13 +3,16 @@ import type { NextRequest } from 'next/server';
 import { userConfigStore } from '@/storage/userConfig';
 
 export function middleware(request: NextRequest) {
-  // Only protect settings page and bot invite
+  // Only protect settings page
   if (request.nextUrl.pathname === '/settings') {
     const discordId = request.cookies.get('discord_id')?.value;
     const githubToken = request.cookies.get('github_token')?.value;
+    const guildId = request.nextUrl.searchParams.get('guild');
 
-    if (!githubToken) {
-      return NextResponse.redirect(new URL('/', request.url));
+    if (!discordId || !githubToken) {
+      // Redirect to Discord auth with return URL
+      const returnUrl = encodeURIComponent(`/settings?guild=${guildId}`);
+      return NextResponse.redirect(new URL(`/api/auth/discord?guild=${guildId}&returnUrl=${returnUrl}`, request.url));
     }
   }
 
