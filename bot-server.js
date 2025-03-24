@@ -66,13 +66,16 @@ client.on("interactionCreate", async (interaction) => {
 
     // Get the message content
     const message = interaction.targetMessage;
-    console.log("Message content:", message.content);
+
+    // Use the interaction user's ID to get their specific config
+    const userId = interaction.user.id;
+    console.log("Creating issue for user:", userId);
 
     // Read config file directly
     const fs = require("fs");
     const configPath = "/var/www/discordtriage/user-configs.json";
     const configs = JSON.parse(fs.readFileSync(configPath, "utf8"));
-    const userConfig = configs[interaction.user.id];
+    const userConfig = configs[userId]; // Use the specific user's ID
 
     if (!userConfig?.githubToken || !userConfig?.githubRepo) {
       await interaction.editReply({
@@ -87,7 +90,7 @@ client.on("interactionCreate", async (interaction) => {
     console.log("Processing message with Anthropic...");
     const processedContent = await processIssueContent(message.content);
 
-    // Create GitHub issue
+    // Create GitHub issue using user's specific config
     const [owner, repo] = userConfig.githubRepo.split("/");
     const octokit = new Octokit({ auth: userConfig.githubToken });
 
