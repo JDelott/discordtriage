@@ -12,41 +12,60 @@ class UserConfigStore {
 
     private constructor() {
         this.configPath = '/var/www/discordtriage/user-configs.json';
-        console.log('Initializing UserConfigStore with path:', this.configPath);
-        
-        const dir = '/var/www/discordtriage';
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-        }
-        
         this.configs = {};
         this.loadConfigs();
     }
 
     public loadConfigs() {
-        if (fs.existsSync(this.configPath)) {
-            const data = fs.readFileSync(this.configPath, 'utf8');
-            this.configs = JSON.parse(data);
+        try {
+            if (fs.existsSync(this.configPath)) {
+                const data = fs.readFileSync(this.configPath, 'utf8');
+                this.configs = JSON.parse(data);
+                console.log('Loaded configs for users:', Object.keys(this.configs));
+            }
+        } catch (error) {
+            console.error('Error loading configs:', error);
+            // Don't override existing configs if read fails
         }
     }
 
     public getConfig(discordId: string): UserConfig | null {
-        this.loadConfigs(); // Reload before getting
-        return this.configs[discordId] || null;
+        try {
+            this.loadConfigs();
+            return this.configs[discordId] || null;
+        } catch (error) {
+            console.error('Error getting config for user:', discordId, error);
+            return null;
+        }
     }
 
     public setConfig(discordId: string, updates: Partial<UserConfig>) {
-        this.loadConfigs(); // Reload before setting
-        const current = this.configs[discordId] || { githubToken: '', githubRepo: '' };
-        this.configs[discordId] = {
-            githubToken: updates.githubToken ?? current.githubToken,
-            githubRepo: updates.githubRepo ?? current.githubRepo
-        };
-        this.saveConfigs();
+        try {
+            this.loadConfigs();
+            const current = this.configs[discordId] || { githubToken: '', githubRepo: '' };
+            this.configs[discordId] = {
+                githubToken: updates.githubToken ?? current.githubToken,
+                githubRepo: updates.githubRepo ?? current.githubRepo
+            };
+            this.saveConfigs();
+            console.log('Updated config for:', discordId, 'New repo:', this.configs[discordId].githubRepo);
+        } catch (error) {
+            console.error('Error setting config for user:', discordId, error);
+            throw error;
+        }
     }
 
     private saveConfigs() {
-        fs.writeFileSync(this.configPath, JSON.stringify(this.configs, null, 2));
+        try {
+            const dir = '/var/www/discordtriage';
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+            }
+            fs.writeFileSync(this.configPath, JSON.stringify(this.configs, null, 2));
+        } catch (error) {
+            console.error('Error saving configs:', error);
+            throw error;
+        }
     }
 
     public static getInstance(): UserConfigStore {
