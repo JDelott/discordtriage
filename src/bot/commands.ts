@@ -60,9 +60,9 @@ export async function handleCommand(interaction: Interaction) {
             return;
         }
 
-        // Get installation config for this specific guild
+        // Get fresh installation config
         const installation = userConfigStore.getInstallation(userId, guildId);
-        console.log('Installation config:', installation);
+        console.log('Current installation config:', installation);
 
         if (!installation?.githubToken || !installation?.githubRepo) {
             const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://discordtriage.com';
@@ -104,7 +104,6 @@ export async function handleCommand(interaction: Interaction) {
 
     } catch (error) {
         console.error('Command error:', error);
-        // Try to send an error message if we haven't replied yet
         try {
             if (!interaction.replied && !interaction.deferred) {
                 await interaction.reply({

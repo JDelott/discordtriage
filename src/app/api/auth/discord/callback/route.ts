@@ -7,7 +7,12 @@ export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const code = searchParams.get('code');
-        const guildId = searchParams.get('state');
+        const state = searchParams.get('state');
+
+        // Parse the state JSON
+        const stateData = JSON.parse(state || '{}');
+        const guildId = stateData.guildId;
+        const returnUrl = stateData.returnUrl;
 
         if (!code) {
             return NextResponse.json({ error: 'No code provided' }, { status: 400 });
@@ -47,14 +52,16 @@ export async function GET(request: Request) {
             path: '/',
         });
 
-        // Redirect to GitHub auth with guild ID
-        const githubAuthUrl = new URL('/api/auth/github', 'https://discordtriage.com');  // Use production URL
-        if (guildId) {
-            githubAuthUrl.searchParams.set('guild', guildId);
+        // If we have a returnUrl, use it, otherwise go to GitHub auth
+        if (returnUrl) {
+            return NextResponse.redirect(new URL(returnUrl, 'https://discordtriage.com'));
+        } else {
+            const githubAuthUrl = new URL('/api/auth/github', 'https://discordtriage.com');
+            if (guildId) {
+                githubAuthUrl.searchParams.set('guild', guildId);
+            }
+            return NextResponse.redirect(githubAuthUrl);
         }
-
-        console.log('Discord auth successful, redirecting to:', githubAuthUrl.toString());
-        return NextResponse.redirect(githubAuthUrl);
     } catch (error) {
         console.error('Error in Discord callback:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
