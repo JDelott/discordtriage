@@ -1,12 +1,8 @@
 import fs from 'fs';
-
-interface UserConfig {
-    githubToken: string;
-    githubRepo: string;
-}
+import { UserConfig, InstallationBinding } from '../types/auth';
 
 class UserConfigStore {
-    public configs: { [key: string]: UserConfig } = {};
+    private configs: { [discordUserId: string]: UserConfig } = {};
     private static instance: UserConfigStore;
     private configPath: string;
 
@@ -21,38 +17,43 @@ class UserConfigStore {
             if (fs.existsSync(this.configPath)) {
                 const data = fs.readFileSync(this.configPath, 'utf8');
                 this.configs = JSON.parse(data);
-                console.log('Loaded configs for users:', Object.keys(this.configs));
             }
         } catch (error) {
             console.error('Error loading configs:', error);
-            // Don't override existing configs if read fails
         }
     }
 
-    public getConfig(discordId: string): UserConfig | null {
-        try {
-            this.loadConfigs();
-            return this.configs[discordId] || null;
-        } catch (error) {
-            console.error('Error getting config for user:', discordId, error);
-            return null;
-        }
+    public getInstallation(discordUserId: string, guildId: string): InstallationBinding | null {
+        this.loadConfigs();
+        return this.configs[discordUserId]?.installations[guildId] || null;
     }
 
-    public setConfig(discordId: string, updates: Partial<UserConfig>) {
-        try {
-            this.loadConfigs();
-            const current = this.configs[discordId] || { githubToken: '', githubRepo: '' };
-            this.configs[discordId] = {
-                githubToken: updates.githubToken ?? current.githubToken,
-                githubRepo: updates.githubRepo ?? current.githubRepo
+    public setInstallation(discordUserId: string, guildId: string, installation: Partial<InstallationBinding>) {
+        this.loadConfigs();
+        
+        if (!this.configs[discordUserId]) {
+            this.configs[discordUserId] = {
+                installations: {},
+                githubToken: installation.githubToken || ''
             };
-            this.saveConfigs();
-            console.log('Updated config for:', discordId, 'New repo:', this.configs[discordId].githubRepo);
-        } catch (error) {
-            console.error('Error setting config for user:', discordId, error);
-            throw error;
         }
+
+        const current = this.configs[discordUserId].installations[guildId] || {
+            discordUserId,
+            guildId,
+            githubToken: '',
+            githubRepo: '',
+            installedAt: new Date()
+        };
+
+        this.configs[discordUserId].installations[guildId] = {
+            ...current,
+            ...installation,
+            discordUserId,
+            guildId
+        };
+
+        this.saveConfigs();
     }
 
     private saveConfigs() {

@@ -4,10 +4,12 @@ import {
     Interaction,
     MessageApplicationCommandData,
     REST,
-    Routes
+    Routes,
+    InteractionReplyOptions
 } from 'discord.js';
 import { createGitHubIssue } from './github';
-import { userConfigStore } from '../storage/userConfig';
+import { userConfigStore } from '@/storage/userConfig';
+import { processIssueContent } from './utils/anthropicProcessor';
 
 // Define commands
 const commands = [
@@ -35,92 +37,60 @@ export async function registerCommands() {
 }
 
 export async function handleCommand(interaction: Interaction) {
-    // Add detailed logging
-    console.log('Received interaction:', {
-        type: interaction.type,
-        commandName: interaction.isCommand() ? interaction.commandName : 'not a command',
-        userId: interaction.user?.id,
-        guildId: interaction.guildId
-    });
-
-    if (!interaction.isMessageContextMenuCommand()) {
-        console.log('Interaction is not a message context menu command');
-        return;
-    }
-
-    if (interaction.commandName !== 'Create GitHub Issue') {
-        console.log('Command name does not match:', interaction.commandName);
-        return;
-    }
-
+    if (!interaction.isMessageContextMenuCommand()) return;
+    if (interaction.commandName !== 'Create GitHub Issue') return;
+    
     try {
         const userId = interaction.user.id;
-        console.log('Processing command for user:', userId);
-        
-        // Check if commands are registered
-        const commands = await interaction.client.application?.commands.fetch();
-        console.log('Available commands:', commands?.map(c => c.name));
-        
-        // Load and verify config
-        userConfigStore.loadConfigs();
-        const config = userConfigStore.getConfig(userId);
-        
-        console.log('User config status:', {
-            userId,
-            hasConfig: !!config,
-            hasToken: !!config?.githubToken,
-            hasRepo: !!config?.githubRepo,
-            repo: config?.githubRepo
-        });
+        const guildId = interaction.guildId;
 
-        if (!config?.githubToken || !config?.githubRepo) {
-            const settingsUrl = process.env.NODE_ENV === 'production' 
-                ? `https://discordtriage.com/api/auth/github?state=${userId}`
-                : `http://localhost:3000/api/auth/github?state=${userId}`;
-
+        if (!guildId) {
             await interaction.reply({
-                content: `Please authenticate with GitHub first: ${settingsUrl}`,
+                content: 'This command can only be used in a server',
                 ephemeral: true
-            });
+            } as InteractionReplyOptions);
             return;
         }
 
-        await interaction.deferReply({ ephemeral: true });
-        
-        const message = interaction.targetMessage;
-        const [owner, repo] = config.githubRepo.split('/');
-        
-        console.log('Creating issue in repository:', config.githubRepo);
+        await interaction.deferReply({ ephemeral: true } as InteractionReplyOptions);
 
-        try {
-            const issueUrl = await createGitHubIssue(
-                config.githubToken,
-                owner,
-                repo,
-                `Discord Thread: ${message.thread?.name || 'Message'}`,
-                `${message.content}\n\nCreated from Discord by ${interaction.user.tag}\nOriginal Message Link: ${message.url}`
-            );
+        // Get installation config for this specific guild
+        const installation = userConfigStore.getInstallation(userId, guildId);
+        
+        if (!installation?.githubToken || !installation?.githubRepo) {
+            const settingsUrl = process.env.NODE_ENV === 'production'
+                ? `https://discordtriage.com/settings?guild=${guildId}`
+                : `http://localhost:3000/settings?guild=${guildId}`;
 
             await interaction.editReply({
-                content: `✅ GitHub issue created successfully! View it here: ${issueUrl}`
-            });
-        } catch (error) {
-            console.error('Failed to create issue:', error);
-            await interaction.editReply({
-                content: `❌ Failed to create issue in ${config.githubRepo}. Please check your repository settings and try again.`
-            });
-        }
-    } catch (error) {
-        console.error('Detailed command error:', error);
-        if (interaction.deferred) {
-            await interaction.editReply({
-                content: '❌ Failed to create GitHub issue. Please check your settings and try again.'
-            });
-        } else {
-            await interaction.reply({
-                content: '❌ Failed to create GitHub issue. Please check your settings and try again.',
+                content: `Please configure GitHub for this server: ${settingsUrl}`,
                 ephemeral: true
-            });
+            } as InteractionReplyOptions);
+            return;
         }
+
+        const message = interaction.targetMessage;
+        const processedContent = await processIssueContent(message.content);
+
+        const [owner, repo] = installation.githubRepo.split('/');
+        const issueUrl = await createGitHubIssue(
+            installation.githubToken,
+            owner,
+            repo,
+            processedContent.title,
+            `${processedContent.body}\n\n---\nCreated from Discord by ${interaction.user.tag}\nOriginal Message: ${message.url}`
+        );
+
+        await interaction.editReply({
+            content: `✅ Issue created! View it here: ${issueUrl}`,
+            ephemeral: true
+        } as InteractionReplyOptions);
+
+    } catch (error) {
+        console.error('Command error:', error);
+        await interaction.editReply({
+            content: 'Failed to create issue. Please check your GitHub settings.',
+            ephemeral: true
+        } as InteractionReplyOptions);
     }
 }

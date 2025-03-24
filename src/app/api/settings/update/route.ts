@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { userConfigStore } from '@/storage/userConfig';
+import { userConfigStore } from '../../../../storage/userConfig';
 
 export async function POST(request: Request) {
     try {
-        const { repo } = await request.json();
+        const { repo, guildId } = await request.json();
         const cookieStore = cookies();
         const githubToken = cookieStore.get('github_token')?.value;
         const discordId = cookieStore.get('discord_id')?.value;
@@ -12,10 +12,11 @@ export async function POST(request: Request) {
         console.log('Settings Update:', { 
             hasGithubToken: !!githubToken,
             discordId,
-            repo
+            repo,
+            guildId
         });
 
-        if (!githubToken || !discordId) {
+        if (!githubToken || !discordId || !guildId) {
             return NextResponse.json(
                 { error: 'Not authenticated' },
                 { status: 401 }
@@ -29,10 +30,10 @@ export async function POST(request: Request) {
             );
         }
 
-        // Update config using actual Discord ID from cookie
-        userConfigStore.setConfig(discordId, {
+        userConfigStore.setInstallation(discordId, guildId, {
             githubToken,
-            githubRepo: repo
+            githubRepo: repo,
+            installedAt: new Date()
         });
 
         return NextResponse.json({ 
