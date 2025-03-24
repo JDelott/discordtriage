@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { userConfigStore } from '@/storage/userConfig';
+import { userConfigStore } from '../../../../storage/userConfig';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
     try {
