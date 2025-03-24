@@ -64,24 +64,18 @@ client.on("interactionCreate", async (interaction) => {
   try {
     await interaction.reply({ content: "Creating issue...", ephemeral: true });
 
-    // Get the message content
+    // Get the message content and use the interaction user's ID
     const message = interaction.targetMessage;
+    const userId = interaction.user.id; // Use the ID of the person who clicked the command
 
-    // IMPORTANT: Use the message author's ID, not the bot's ID
-    const userId = message.author.id;
-    console.log("Creating issue for message author:", userId);
+    console.log("Command triggered by user:", userId);
+    console.log("Message content:", message.content);
 
-    // Read config file directly with more logging
+    // Read config file directly
     const fs = require("fs");
     const configPath = "/var/www/discordtriage/user-configs.json";
-    console.log("Reading config from:", configPath);
-
     const configs = JSON.parse(fs.readFileSync(configPath, "utf8"));
-    console.log("Available user IDs:", Object.keys(configs));
-
-    // Make sure we're using the correct user ID
     const userConfig = configs[userId];
-    console.log("Using repo:", userConfig?.githubRepo, "for user:", userId);
 
     if (!userConfig?.githubToken || !userConfig?.githubRepo) {
       await interaction.editReply({
@@ -96,9 +90,8 @@ client.on("interactionCreate", async (interaction) => {
     console.log("Processing message with Anthropic...");
     const processedContent = await processIssueContent(message.content);
 
-    // Create GitHub issue using user's specific config
+    // Create GitHub issue
     const [owner, repo] = userConfig.githubRepo.split("/");
-
     const octokit = new Octokit({ auth: userConfig.githubToken });
 
     const response = await octokit.issues.create({
