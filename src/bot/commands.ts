@@ -58,7 +58,7 @@ export async function handleCommand(interaction: Interaction) {
 
         // Get installation config for this specific guild
         const installation = userConfigStore.getInstallation(userId, guildId);
-        console.log('Installation config:', installation);
+        console.log('Installations config:', installation);
 
         if (!installation?.githubToken || !installation?.githubRepo) {
             const settingsUrl = process.env.NODE_ENV === 'production'
