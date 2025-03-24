@@ -13,12 +13,6 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: 'No code provided' }, { status: 400 });
         }
 
-        // Use the exact same redirect URI as in the initial request
-        const redirectUri = `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/discord/callback`;
-        
-        console.log('Callback received with code:', code);
-        console.log('Using redirect URI:', redirectUri);
-
         // Exchange code for token
         const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
             method: 'POST',
@@ -28,7 +22,7 @@ export async function GET(request: Request) {
                 client_secret: process.env.DISCORD_CLIENT_SECRET!,
                 code,
                 grant_type: 'authorization_code',
-                redirect_uri: redirectUri  // Must match exactly
+                redirect_uri: 'https://discordtriage.com/api/auth/discord/callback'  // Match exactly
             })
         });
 
@@ -54,16 +48,15 @@ export async function GET(request: Request) {
         });
 
         // Redirect to GitHub auth with guild ID
-        const githubAuthUrl = new URL('/api/auth/github', request.url);
+        const githubAuthUrl = new URL('/api/auth/github', 'https://discordtriage.com');  // Use production URL
         if (guildId) {
             githubAuthUrl.searchParams.set('guild', guildId);
         }
 
-        console.log('Discord auth successful, redirecting to GitHub auth');
+        console.log('Discord auth successful, redirecting to:', githubAuthUrl.toString());
         return NextResponse.redirect(githubAuthUrl);
-
     } catch (error) {
-        console.error('Discord callback error:', error);
+        console.error('Error in Discord callback:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
