@@ -23,9 +23,23 @@ class UserConfigStore {
         }
     }
 
-    public getInstallation(discordUserId: string, guildId: string): InstallationBinding | null {
-        this.loadConfigs();
-        return this.configs[discordUserId]?.installations[guildId] || null;
+    public getInstallation(discordUserId: string, guildId: string) {
+        this.loadConfigs();  // Ensure configs are loaded
+        
+        // Initialize user config if it doesn't exist
+        if (!this.configs[discordUserId]) {
+            this.configs[discordUserId] = {
+                installations: {},
+                githubToken: ''
+            };
+        }
+
+        // Initialize installations if it doesn't exist
+        if (!this.configs[discordUserId].installations) {
+            this.configs[discordUserId].installations = {};
+        }
+
+        return this.configs[discordUserId].installations[guildId];
     }
 
     public setInstallation(discordUserId: string, guildId: string, installation: Partial<InstallationBinding>) {
@@ -36,6 +50,11 @@ class UserConfigStore {
                 installations: {},
                 githubToken: installation.githubToken || ''
             };
+        }
+
+        // Initialize installations if it doesn't exist
+        if (!this.configs[discordUserId].installations) {
+            this.configs[discordUserId].installations = {};
         }
 
         const current = this.configs[discordUserId].installations[guildId] || {
