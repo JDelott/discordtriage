@@ -95,7 +95,8 @@ client.on("interactionCreate", async (interaction) => {
       owner,
       repo,
       title: processedContent.title,
-      body: `${processedContent.body}\n\n---\nCreated from Discord by ${interaction.user.tag}\nOriginal Message Link: ${message.url}`,
+      body: `${processedContent.body}\n\n---\n## Original Discord Message\n\`\`\`\n${message.content}\n\`\`\`\n\n---\nCreated from Discord by ${interaction.user.tag}\nOriginal Message Link: ${message.url}`,
+      labels: ["discord"],
     });
 
     await interaction.editReply({
