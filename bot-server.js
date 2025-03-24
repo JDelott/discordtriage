@@ -76,16 +76,12 @@ client.on("interactionCreate", async (interaction) => {
     const configPath = "/var/www/discordtriage/user-configs.json";
     console.log("Reading config from:", configPath);
 
-    const configContent = fs.readFileSync(configPath, "utf8");
-    console.log("Raw config content:", configContent);
-
-    const configs = JSON.parse(configContent);
-    console.log("All user IDs in config:", Object.keys(configs));
+    const configs = JSON.parse(fs.readFileSync(configPath, "utf8"));
+    console.log("Available user IDs:", Object.keys(configs));
 
     // Make sure we're using the correct user ID
     const userConfig = configs[userId];
-    console.log("User ID:", userId);
-    console.log("User specific config:", userConfig);
+    console.log("Using repo:", userConfig?.githubRepo, "for user:", userId);
 
     if (!userConfig?.githubToken || !userConfig?.githubRepo) {
       await interaction.editReply({
@@ -102,12 +98,6 @@ client.on("interactionCreate", async (interaction) => {
 
     // Create GitHub issue using user's specific config
     const [owner, repo] = userConfig.githubRepo.split("/");
-    console.log(
-      "Creating issue in repo:",
-      userConfig.githubRepo,
-      "for user:",
-      userId
-    );
 
     const octokit = new Octokit({ auth: userConfig.githubToken });
 
