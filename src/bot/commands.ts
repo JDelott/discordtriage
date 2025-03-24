@@ -12,6 +12,7 @@ import {
 import { createGitHubIssue } from './github';
 import { userConfigStore } from '../storage/userConfig';
 import { processIssueContent } from './utils/anthropicProcessor';
+import { BOT_CONFIG } from './config';
 
 // Define commands
 const commands = [
@@ -46,35 +47,31 @@ export async function handleCommand(interaction: Interaction) {
     if (interaction.commandName !== 'Create GitHub Issue') return;
     
     try {
-        await interaction.deferReply({ ephemeral: true } as InteractionReplyOptions);
-        
         const userId = interaction.user.id;
         const guildId = interaction.guildId;
 
         console.log('Processing command for:', { userId, guildId });
 
         if (!guildId) {
-            await interaction.editReply({
-                content: 'This command can only be used in a server'
-            } as InteractionEditReplyOptions);
+            await interaction.reply({
+                content: 'This command can only be used in a server',
+                ephemeral: true
+            } as InteractionReplyOptions);
             return;
         }
 
-        // Force reload configs before checking installation
-        userConfigStore.loadConfigs();
-        
         // Get installation config for this specific guild
         const installation = userConfigStore.getInstallation(userId, guildId);
         console.log('Installation config:', installation);
 
         if (!installation?.githubToken || !installation?.githubRepo) {
-            const settingsUrl = process.env.NODE_ENV === 'production'
-                ? `https://discordtriage.com/settings?guild=${guildId}`
-                : `http://localhost:3000/settings?guild=${guildId}`;
-
-            await interaction.editReply({
-                content: `Please configure GitHub for this server: ${settingsUrl}`
-            } as InteractionEditReplyOptions);
+            // Use the Discord OAuth flow instead of direct GitHub auth
+            const authUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/discord?guild=${guildId}`;
+            
+            await interaction.reply({
+                content: `Please authenticate and configure GitHub for this server: ${authUrl}`,
+                ephemeral: true
+            } as InteractionReplyOptions);
             return;
         }
 
@@ -105,7 +102,8 @@ export async function handleCommand(interaction: Interaction) {
     } catch (error) {
         console.error('Command error:', error);
         await interaction.editReply({
-            content: 'Failed to create issue. Please check your GitHub settings.'
-        } as InteractionEditReplyOptions);
+            content: 'Failed to create issue. Please check your GitHub settings.',
+            ephemeral: true
+        } as InteractionReplyOptions);
     }
 }
