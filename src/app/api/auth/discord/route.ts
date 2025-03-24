@@ -7,18 +7,19 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const guildId = searchParams.get('guild');
 
-    // Build Discord OAuth URL
+    // Build Discord OAuth URL with proper scope formatting
     const params = new URLSearchParams({
         client_id: BOT_CONFIG.applicationId!,
         redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/discord/callback`,
         response_type: 'code',
-        scope: 'identify guilds bot applications.commands',
-        state: guildId || '',
-        permissions: '0'
+        scope: 'bot applications.commands identify guilds',  // Reordered scopes
+        permissions: '0',
+        state: guildId || ''
     });
 
     console.log('Starting Discord auth flow with params:', Object.fromEntries(params));
 
+    // Use the non-API endpoint URL
     return NextResponse.redirect(
         new URL(`https://discord.com/oauth2/authorize?${params.toString()}`)
     );
