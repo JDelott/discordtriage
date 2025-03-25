@@ -73,7 +73,7 @@ export default function Home() {
                     </div>
 
                     <div className="flex items-center justify-center md:justify-start space-x-6">
-                        {isAuthenticated ? (
+                        {/* {isAuthenticated ? (
                             <div className="flex items-center space-x-4">
                                 <a
                                     href="/settings"
@@ -95,7 +95,7 @@ export default function Home() {
                             >
                                 Connect GitHub
                             </button>
-                        )}
+                        )} */}
                     </div>
                 </div>
 
