@@ -26,6 +26,7 @@ export async function createGitHubIssue(token: string, owner: string, repo: stri
             repo,
             title,
             body,
+            labels: ['discord']
         });
         
         console.log('Issue created successfully:', response.data.html_url);

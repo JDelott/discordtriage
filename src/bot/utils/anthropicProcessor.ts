@@ -19,7 +19,7 @@ export async function processIssueContent(message: string): Promise<{title: stri
     Respond with only valid JSON in this format:
     {
         "title": "Brief issue title",
-        "body": "Formatted issue description"
+        "body": "Formatted issue description\n\n---\n\nOriginal Discord Message:\n\`\`\`\n${message}\n\`\`\`"
     }`;
 
     const response = await anthropic.messages.create({
