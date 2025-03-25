@@ -5,6 +5,9 @@ export async function processIssueContent(message: string): Promise<{title: stri
         apiKey: process.env.ANTHROPIC_API_KEY,
     });
 
+    // Escape any special characters in the message
+    const escapedMessage = message.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+
     const prompt = `
     You are a helpful assistant that converts Discord messages into well-formatted GitHub issues.
     Format the following Discord message into a clear GitHub issue with:
@@ -14,12 +17,12 @@ export async function processIssueContent(message: string): Promise<{title: stri
     - Steps to reproduce if applicable
     - Expected vs actual behavior if it's a bug
     
-    Discord message: ${message}
+    Discord message: ${escapedMessage}
     
     Respond with only valid JSON in this format:
     {
         "title": "Brief issue title",
-        "body": "Formatted issue description\n\n---\n\nOriginal Discord Message:\n\`\`\`\n${message}\n\`\`\`"
+        "body": "Formatted issue description\\n\\n---\\n\\nOriginal Message:\\n${escapedMessage}"
     }`;
 
     const response = await anthropic.messages.create({
